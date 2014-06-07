@@ -59,12 +59,23 @@ public class AutoCompleteIndex {
                    new IndexBuilder( indexName ) );
 
         db.createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
+        
+        buildIndexesForLibraries( db.getLibraryIds(lang) );
+    }
+    
+    /**
+     * Build auto-complete indexes for all the given libraries.
+     */
+    protected void buildIndexesForLibraries(Collection<String> libraryIds) {
+        for (String libraryId : libraryIds) {
+            buildIndexForLibrary(libraryId);
+        }
     }
 
     /**
      * Build the auto-complete index for the given library.
      */
-    public void buildIndex( String libraryId ) {
+    protected void buildIndexForLibrary( String libraryId ) {
 
         String indexName = buildAutoCompleteIndexName( libraryId );
         db.drop( indexName  );
@@ -110,7 +121,7 @@ public class AutoCompleteIndex {
             db.forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
         }
         
-        buildIndex(libraryId);
+        buildIndexForLibrary(libraryId);
         
     }
     

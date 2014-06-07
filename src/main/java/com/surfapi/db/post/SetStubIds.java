@@ -58,11 +58,14 @@ public class SetStubIds implements DB.ForAll {
         setStubIdsHelper( libraryId, (List) doc.get("innerClasses") );
         
         // Package-specific stuff
-        setStubIdsHelper( libraryId, (List) doc.get("ordinaryClasses") );
-        setStubIdsHelper( libraryId, (List) doc.get("exceptions") );
-        setStubIdsHelper( libraryId, (List) doc.get("enums") );
-        setStubIdsHelper( libraryId, (List) doc.get("errors") );
-        setStubIdsHelper( libraryId, (List) doc.get("annotationTypes") );
+        if (JavadocMapUtils.isPackage(doc)) {
+            setStubIdsHelper( libraryId, (List) doc.get("ordinaryClasses") );
+            setStubIdsHelper( libraryId, (List) doc.get("interfaces") );
+            setStubIdsHelper( libraryId, (List) doc.get("exceptions") );
+            setStubIdsHelper( libraryId, (List) doc.get("enums") );
+            setStubIdsHelper( libraryId, (List) doc.get("errors") );
+            setStubIdsHelper( libraryId, (List) doc.get("annotationTypes") );
+        }
         
         return doc;
     }

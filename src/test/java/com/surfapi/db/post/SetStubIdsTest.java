@@ -70,6 +70,11 @@ public class SetStubIdsTest {
         Map callableInterface = ((List<Map>)doc.get("interfaces")).get(0);
         assertNull( callableInterface.get("_id") );
         
+        // Verify package interfaces' ids have been set
+        doc = db.read("/java/com.surfapi/1.0/com.surfapi.test");
+        assertNotNull(doc);
+        assertTrue( assertAllIdsAreSet( libraryId, (List<Map>) doc.get("interfaces") ).size() > 0) ;
+        
     }
     
     private Collection<Map> assertAllIdsAreNull( Collection<Map> stubs) {
