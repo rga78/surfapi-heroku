@@ -1,0 +1,355 @@
+
+@import url(bootstrap.min.css);
+
+body {
+    font-family: verdana, tahoma, 'lucida grande', verdana, arial, sans-serif, helvetica;
+}
+
+hr {
+    border-bottom: solid 1px lightgray;
+}
+
+/* To compensate for bootstrap.css, which sets margin-top to 0.  */
+p {
+    margin-top: 10px;
+}
+
+td {
+    vertical-align: top;
+}
+
+.bg-shade {
+    background-color: #f0f0f0; 
+}
+
+.border-bottom {
+    border-bottom: dotted 1px gray;
+}
+
+.border-bottom-lite {
+    border-bottom: dotted 1px lightgray;
+}
+
+.border-left {
+    border-left: solid 1px lightgray;
+}
+
+.border-right {
+    border-right: solid 1px lightgray;
+}
+
+.border-tab, .tab-label {
+    border-top: solid 1px lightgray;
+    border-left: solid 1px lightgray;
+    border-right: solid 1px lightgray;
+    border-radius: 3px;
+    padding: 0 25px 0 10px;
+    background-color: white;
+}
+
+.border-tab-pane, .tab-body {
+    border-bottom: solid 1px lightgray;
+    border-left: solid 1px lightgray;
+    border-right: solid 1px lightgray;
+    border-radius: 3px;
+    padding: 10px;
+}
+
+.tab-header {
+    margin-bottom: 0px;
+    border-bottom: solid 1px lightgray;
+}
+
+
+.border-tab-lite {
+    border-top: dotted 1px lightgray;
+    border-left: dotted 1px lightgray;
+    border-right: dotted 1px lightgray;
+    border-radius: 3px;
+    padding: 0 15px 1px 5px;
+    background-color: white;
+}
+
+
+.border  {
+    border: dotted 1px gray;
+    padding: 5px;
+}
+
+
+.comma-separated-list .list-item:after {
+    content: ",";
+}
+
+.comma-separated-list .list-item:last-child:after {
+    content: "";
+}
+
+.centered {
+    text-align: center;
+}
+
+.footer {
+    font-size: 18px;
+    color: #999;
+}
+
+.meta-type-interface,
+.meta-type-annotationType {
+    font-style: italic;
+}
+
+.nav-path-bar {
+    border-bottom: solid 1px lightgray;
+    border-top: solid 1px lightgray;
+    padding: 10px;
+}
+
+.nav-path-bar a {
+    padding: 10px;
+}
+
+
+.ontop {
+    z-index: 10;
+}
+
+
+ul.table-condensed {
+    padding: 0px;
+}
+
+ul.table-condensed > li {
+    padding: 5px 0px;
+    /* border-bottom: 1px dotted gray; */
+}
+
+ul.table-striped > li:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+
+.table-condensed > tbody > tr > td {
+    border-top: none;
+}
+
+/*
+.table-condensed > tbody > tr:nth-child(odd) > td {
+    background-color: #f0f0f0;
+}
+*/
+
+
+
+
+/**
+ * for <tabset>
+ */
+.nav, .pagination, .carousel, .panel-title a { 
+    cursor: pointer; 
+}
+
+a:hover, .hover-pointer {
+    cursor: pointer; 
+}
+
+.hover-highlight:hover {
+    background-color:#f5f5f5
+}
+
+.code {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+}
+
+.autoComplete input {
+    font-size: 32px;
+    border-radius: 12px;
+    padding: 4px 12px;
+    width: 500px;
+}
+
+.autoComplete textarea:focus, 
+.autoComplete input:focus {
+    outline: 0;
+}
+
+
+.autoComplete {
+    padding: 20px 0 40px 0;
+    background-color: #222;
+    text-align: center;
+}
+
+.auto-complete-results {
+    margin-top: 2px;
+    position: relative;
+    /* text-align: center; */
+}
+
+.auto-complete-close {
+    text-align: center;
+}
+
+ul {
+    list-style-type: none;
+}
+
+.auto-complete-results ul {
+    /* font-size: 130%; */
+    list-style-type: none;
+    padding: 0px;
+    /* font-size: 22px; */
+    position: absolute;
+    background-color: white;
+    /* left: 30px;
+    right: 30px; */
+
+  border-color: rgba(82, 82, 82, 0.8); 
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 82, 82, 0.6);
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 82, 82, 0.6);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 82, 82, 0.6);
+  outline: 0;
+  outline: thin dotted \9;
+}
+
+.auto-complete-results *:focus {
+     outline: 0;
+}
+
+a {
+    text-decoration: none !important;
+}
+
+.auto-complete-results a,
+.border-highlight a {
+    color: #434;
+}
+
+.auto-complete-results a:hover div, 
+.auto-complete-results a:focus div,
+.border-highlight a:hover div,
+.border-highlight a:focus div
+{
+
+  border-color: rgba(82, 168, 236, 0.8);
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+  outline: 0;
+  outline: thin dotted \9;
+
+    color: gray;
+}
+
+
+h1.model-title {
+    margin: 0 0 25px 0;
+}
+
+.model-identifier {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    font-weight: bold;
+    font-size: 110%;
+}
+
+.padding-lite {
+    padding: 15px;
+}
+
+.padding-xlite {
+    padding: 10px;
+}
+
+.padding-xxlite {
+    padding: 5px;
+}
+
+.padding-none {
+    padding: 0px;
+}
+
+.padding-horizontal {
+    padding-left: 25px;
+    padding-right: 25px;
+}
+
+
+.padding-horizontal-lite {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+table.padding-horizontal-lite td {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+table.padding-horizontal-lite td:first-child {
+    padding-left: 0px;
+}
+
+.padding-vertical-lite {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.padding-bottom-lite {
+    padding-bottom: 15px;
+}
+
+
+.text-right {
+    text-align: right;
+}
+
+.tab-1 {
+    padding-left: 10px;
+}
+
+.tab-2 {
+    padding-left: 20px;
+}
+
+.tab-3 {
+    padding-left: 30px;
+}
+
+.tab-4 {
+    padding-left: 40px;
+}
+
+.tab-5 {
+    padding-left: 50px;
+}
+
+.tab-6 {
+    padding-left: 60px;
+}
+
+.tab-7 {
+    padding-left: 70px;
+}
+
+.tab-8 {
+    padding-left: 80px;
+}
+
+.tab-9 {
+    padding-left: 90px;
+}
+
+.tab-10 {
+    padding-left: 100px;
+}
+
+.tab-11 {
+    padding-left: 110px;
+}
+
+
+.verticalSpacer,
+.vertical-spacer {
+    margin-top: 25px;
+    margin-bottom: 25px;
+}
+

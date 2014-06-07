@@ -1,0 +1,40 @@
+<div class="row" ng-controller="MethodController">
+    <div class="code col-md-2">
+        {{methodDoc.modifiers}} 
+        <sa-type doc="methodDoc.returnType"></sa-type>
+    </div> 
+    <div class="col-md-10">
+        <div class="code">
+            <a class="model-identifier"  ng-click="showFull = !showFull">{{methodDoc.name}}</a>
+        </div>
+
+        <div ng-show="showFull" >
+
+            <div class="padding-vertical-lite" ng-bind-html="methodDoc.commentText | formatTags:methodDoc"></div>
+
+            <h4>Type</h4>
+            <ul>
+                <li>
+                    <span class="code"><sa-type doc="methodDoc.returnType"></sa-type></span>
+                    <span ng-repeat="returnsTag in methodDoc.tags | filter : { 'kind':'@return' }">
+                        <span class="padding-lite" ng-bind-html="returnsTag.text | formatTags:methodDoc"></span>
+                    </span>
+                </li>
+            </ul>
+
+            <div ng-show="methodDoc.defaultValue.toString">
+                <h4>Default Value</h4>
+                <ul>
+                    <li>
+                        <span ng-bind="methodDoc.defaultValue.toString"></span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- block tags -->
+            <div ng-include="'partials/block-tags.html'" onload="model=methodDoc"></div>
+
+        </div>
+    </div>
+</div>
+

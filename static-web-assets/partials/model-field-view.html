@@ -1,0 +1,27 @@
+<div class="row" ng-controller="MethodController">
+    <div class="code col-md-2">
+
+        <!-- Annotations on the field, if any -->
+        <ul class="padding-none" ng-if="!isEmpty(fieldDoc.annotations) && showFullDocToggle" >
+             <li class="padding-none" ng-repeat="annotation in fieldDoc.annotations">
+                 <span class="code" ng-bind-html="formatAnnotation(annotation)"></span>
+             </li>
+        </ul>
+
+        {{fieldDoc.modifiers}} 
+        <sa-type doc="fieldDoc.type"></sa-type>
+    </div> 
+    <div class="col-md-10">
+        <div class="code">
+            <a class="model-identifier" ng-click="showFullDoc()">{{fieldDoc.name}}</a>
+            <span ng-if="!isEmpty(fieldDoc.constantValueExpression)">= {{fieldDoc.constantValueExpression}}</span>
+        </div>
+        <div ng-show="showFullDocToggle" >
+            <div class="padding-vertical-lite" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></div>
+
+            <!-- block tags -->
+            <div ng-include="'partials/block-tags.html'" onload="model=fieldDoc"></div>
+        </div>
+    </div>
+</div>
+

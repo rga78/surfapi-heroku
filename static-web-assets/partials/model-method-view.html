@@ -1,0 +1,151 @@
+<div class="row" ng-controller="MethodController" >
+<!-- div class="row hover-pointer hover-highlight" ng-controller="MethodController" ng-click="showFullDoc()" -->
+    <div class="code col-md-2">
+
+        <!-- Annotations on the method, if any -->
+        <ul class="padding-none" ng-if="!isEmpty(methodDoc.annotations) && showFullDocToggle" >
+             <li class="padding-none" ng-repeat="annotation in methodDoc.annotations">
+                <span class="code" ng-bind-html="formatAnnotation(annotation)"></span>
+             </li>
+        </ul>
+
+        {{methodDoc.modifiers}} 
+        <sa-type-parameters doc="methodDoc.typeParameters"></sa-type-parameters>
+        <sa-type doc="methodDoc.returnType"></sa-type>
+    </div> 
+    <div class="col-md-10">
+        <div class="code">
+            <!-- a class="model-identifier" href="#{{methodDoc._id}}">{{methodDoc.name}}</a -->
+            <a class="model-identifier" ng-click="showFullDoc()">{{methodDoc.name}}</a>
+
+            <!-- method signature (includes annotations on any parms) -->
+            (<span ng-bind-html="formatMethodSignature()"></span>)
+
+            <!-- throws clause -->
+            <span ng-show="!isEmpty(methodDoc.thrownExceptionTypes)">throws
+                <span class="comma-separated-list">
+                    <span class="list-item" ng-repeat="thrownExceptionType in methodDoc.thrownExceptionTypes">
+                        <sa-type doc="thrownExceptionType"></sa-type
+                    ></span>
+                </span>
+            </span>
+        </div>
+
+        <div ng-show="showFullDocToggle" class="padding-bottom-lite">
+            <div class="padding-vertical-lite">
+                <p ng-repeat="deprecatedTag in methodDoc.tags | filter : { 'kind': '@deprecated' }">
+                    <b>Deprecated</b>
+                    <i ng-bind-html="deprecatedTag.text"></i>
+                </p>
+
+                <!-- Method main javadoc comment -->
+                <div ng-bind-html="methodDoc.commentText | formatTags:methodDoc"></div>
+            </div>
+
+            <!-- Method TYPE parameters -->
+            <div ng-if="methodDoc.typeParamTags">
+                <h4>Type Parameters</h4>
+                <ul> 
+                    <li ng-repeat="typeParamTag in methodDoc.typeParamTags">
+                        <span class="code">&lt;{{typeParamTag.parameterName}}&gt;</span>
+                        <span class="padding-lite" ng-bind-html="typeParamTag.parameterComment | formatTags:methodDoc"></span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Method parameters -->
+            <div ng-if="!isEmpty(methodDoc.parameters)">
+                <h4>Parameters</h4>
+                <ul>
+                    <li>
+                        <table class="padding-horizontal-lite">
+                            <tr ng-repeat="param in methodDoc.parameters"> 
+                                <td>
+                                    <span class="code"><sa-type doc="param.type"></sa-type> {{param.name}}</span>
+                                </td>
+                                <td ng-repeat="paramTag in methodDoc.paramTags | filter : { 'parameterName': param.name }">
+                                    <span ng-bind-html="paramTag.parameterComment | formatTags:methodDoc"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Method's return type-->
+            <div ng-if="!isEmpty(methodDoc.returnType)">
+                <h4>Returns</h4>
+                <ul>
+                    <li>
+                        <table class="padding-horizontal-lite">
+                            <tr>
+                                <td>
+                                    <span class="code"><sa-type doc="methodDoc.returnType"></sa-type></span>
+                                </td>
+                                <td ng-repeat="returnsTag in methodDoc.tags | filter : { 'kind':'@return' }">
+                                    <span ng-bind-html="returnsTag.text | formatTags:methodDoc "></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Method's thrown exceptions  -->
+            <div ng-if="!isEmpty(methodDoc.throwsTags)"> <!--  || !isEmpty(methodDoc.thrownExceptionTypes)" -->
+                <h4>Throws</h4>
+                <ul>
+                    <li>
+                        <table class="padding-horizontal-lite">
+                            <!-- TODO: 'zip' the thrownExceptions and throwsTags together. Currently only 
+                                        exceptions with an @throws tag are shown. -->
+
+                            <!-- li ng-repeat="ex in methodDoc.thrownExceptionTypes">
+                                <code><sa-type doc="ex"></sa-type></code>
+                                <span class="padding-lite" ng-repeat="throwsTag in methodDoc.throwsTags | filter : { 'exceptionName': ex.typeName }">
+                                    <span ng-bind-html="throwsTag.exceptionComment"></span>
+                                </span>
+                            </li -->
+                            <tr ng-repeat="throwsTag in methodDoc.throwsTags">
+                                <td>
+                                    <span class="code">
+                                        <sa-type ng-if="!isEmpty(throwsTag.exceptionType)" doc="throwsTag.exceptionType"></sa-type>
+                                        <span ng-if="isEmpty(throwsTag.exceptionType)" ng-bind="throwsTag.exceptionName"></span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span ng-bind-html="throwsTag.exceptionComment | formatTags:methodDoc"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- overrides and implements -->
+            <div ng-if="methodDoc._overrides">
+                <h4>Overrides</h4>
+                <ul>
+                    <li>
+                        <span class="code"><a href="#{{methodDoc._overrides._id}}">{{methodDoc._overrides.qualifiedName}}</a></span>
+                    </li>
+                </ul>
+            </div>
+
+            <div ng-if="methodDoc._implements">
+                <h4>Implements</h4>
+                <ul>
+                    <li>
+                        <span class="code" class="padding-horizontal-lite"><a href="#{{methodDoc._implements._id}}">{{methodDoc._implements.qualifiedName}}</a></span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- block tags -->
+            <div ng-include="'partials/block-tags.html'" onload="model=methodDoc"></div>
+
+        </div>
+
+    </div>
+</div>
+

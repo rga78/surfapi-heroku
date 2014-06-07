@@ -1,0 +1,33 @@
+<!-- auto-complete search bar -->
+<div ng-controller="SearchController" >
+    <form role="search">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Class or package name..." ng-model="str" ng-change="autoCompleteKeypress()">
+            <div class="input-group-btn">
+                <button tabindex="-1" class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
+            </div>
+        </div>
+    </form>
+    <div class="auto-complete-results">
+        <ul class="ontop container">
+            <li ng-repeat="item in autoCompleteData">
+                <a href="#{{item.id}}" ng-click="clearListing()">
+                    <div class="padding-xlite" >
+                        <span class="h4">{{ item.name }}
+                            <br/>
+                            <small>{{ item.qualifiedName }} - {{item._library.name}} {{item._library.version}}</small>
+                        </span>
+                    </div>
+                </a>
+            </li>
+            <li class="auto-complete-close" ng-if="!isEmpty(autoCompleteData)">
+                <a href="" ng-click="clearListing()">
+                    <div class="padding-xlite" >
+                        <span class="h4"><small>Clear Results</small></span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
