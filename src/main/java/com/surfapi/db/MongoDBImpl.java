@@ -60,7 +60,11 @@ public class MongoDBImpl implements DB {
     public void save(String collection, Map obj) {
         // Log.log(this, "adding object with id: " + obj.get("_id"));
         validateSave(collection, obj);
-        mongoDB.getCollection(collection).save( new BasicDBObject(obj) );
+        try {
+            mongoDB.getCollection(collection).save( new BasicDBObject(obj) );
+        } catch (Exception e) {
+            throw new RuntimeException("Exception saving object " + obj.get("_id") + ": " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -136,21 +140,6 @@ public class MongoDBImpl implements DB {
         
         return retMe;
     }
-
-
-    // -rx- /**
-    // -rx-  * 
-    // -rx-  */
-    // -rx- protected JSONObject toJSONObject( DBCollection dbCollection) {
-    // -rx-     
-    // -rx-     JSONObject retMe = new JSONObject(); 
-    // -rx-     
-    // -rx-     retMe.put("name", dbCollection.getName());
-    // -rx-     retMe.put("count", dbCollection.count());
-    // -rx-     retMe.put("indexes", getIndexStats( dbCollection ) );
-    // -rx-     
-    // -rx-     return retMe;
-    // -rx- }
     
     /**
      * 

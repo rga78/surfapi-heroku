@@ -7,6 +7,7 @@ import com.sun.javadoc.LanguageVersion;
 import com.sun.javadoc.RootDoc;
 import com.surfapi.db.DBLoader;
 import com.surfapi.db.MongoDBService;
+import com.surfapi.log.Log;
 
 /**
  * Javadoc doclet.  Inserts javadoc into mongodb.
@@ -56,7 +57,11 @@ public class MongoDoclet extends JsonDoclet {
     protected boolean go() {
         
         for (ClassDoc classDoc : rootDoc.classes()) {
-            dbLoader.popDB( getLibraryId(), processClass(classDoc));
+            try {
+                dbLoader.popDB( getLibraryId(), processClass(classDoc));
+            } catch (Exception e) {
+                Log.error(this, "go: caught exception: " + e);
+            }
         }
         
         dbLoader.popDB( getLibraryId(), processPackages( getPackageDocs() ));

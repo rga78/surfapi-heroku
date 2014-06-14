@@ -1,7 +1,9 @@
 <div>
     <div ng-if="libraryModel">
 
-        <h4 class="text-right"><a href="#{{libraryModel._id}}">{{libraryModel.name}} {{libraryModel.version}}</a></h4>
+        <h4 class="text-right overflow-hidden">
+            <a href="#{{libraryModel._id}}" title="{{libraryModel.name}} {{libraryModel.version}}">{{libraryModel.name}} {{libraryModel.version}}</a>
+        </h4>
 
         <!-- within-library auto-complete search bar -->
         <div ng-controller="LibrarySearchController" >
@@ -36,24 +38,26 @@
             </div>
         </div>
 
-        <h4 class="border-bottom-lite"><span class="border-tab-lite">Packages</span></h4>
-        <ul class="padding-none">
-            <li class="padding-none" ng-repeat="model in libraryModel.packages | orderBy: 'name'">
-                <a href="#{{model._id}}">{{model.name}}</a>
-            </li>
-        </ul>
+        <div class="overflow-hidden">
+            <h4 class="border-bottom-lite"><span class="border-tab-lite">Packages</span></h4>
+            <ul class="padding-none">
+                <li class="padding-none" ng-repeat="model in libraryModel.packages | orderBy: 'name'">
+                <a href="#{{model._id}}" title="{{model.name}}">{{model.name}}</a>
+                </li>
+            </ul>
+        </div>
         <hr />
     </div>
 
-    <div ng-if="packageModel">
+    <div ng-if="packageModel" class="overflow-hidden">
 
-        <h4 class="text-right"><a href="#{{packageModel._id}}">{{packageModel.name}}</a></h4>
+        <h4 class="text-right"><a href="#{{packageModel._id}}" title="{{model.name}}">{{packageModel.name}}</a></h4>
 
         <div ng-if="!isEmpty(packageModel.interfaces)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Interfaces</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.interfaces | orderBy: 'name'">
-                    <a class="meta-type-{{model.metaType}}" href="#{{model._id}}">{{model.name}}</a>
+                    <a class="meta-type-{{model.metaType}}" title="{{model.name}}" href="#{{model._id}}">{{model.name}}</a>
                 </li>
             </ul>
         </div>
@@ -62,7 +66,7 @@
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Classes</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.ordinaryClasses | orderBy: 'name'">
-                    <a class="meta-type-{{model.metaType}}" href="#{{model._id}}">{{model.name}}</a>
+                    <a class="meta-type-{{model.metaType}}" title="{{model.name}}" href="#{{model._id}}">{{model.name}}</a>
                 </li>
             </ul>
         </div>
@@ -71,7 +75,7 @@
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Enums</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.enums | orderBy: 'name'">
-                    <a class="meta-type-{{model.metaType}}" href="#{{model._id}}">{{model.name}}</a>
+                    <a class="meta-type-{{model.metaType}}" title="{{model.name}}" href="#{{model._id}}">{{model.name}}</a>
                 </li>
             </ul>
         </div>
@@ -80,7 +84,7 @@
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Exceptions</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.exceptions | orderBy: 'name'">
-                    <a class="meta-type-{{model.metaType}}" href="#{{model._id}}">{{model.name}}</a>
+                    <a class="meta-type-{{model.metaType}}" title="{{model.name}}" href="#{{model._id}}">{{model.name}}</a>
                 </li>
             </ul>
         </div>
@@ -89,7 +93,7 @@
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Errors</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.errors | orderBy: 'name'">
-                    <a class="meta-type-{{model.metaType}}" href="#{{model._id}}">{{model.name}}</a>
+                    <a class="meta-type-{{model.metaType}}" title="{{model.name}}" href="#{{model._id}}">{{model.name}}</a>
                 </li>
             </ul>
         </div>
@@ -98,7 +102,7 @@
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Annotation Types</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.annotationTypes | orderBy: 'name'">
-                    <a class="meta-type-{{model.metaType}}" href="#{{model._id}}">@{{model.name}}</a>
+                    <a class="meta-type-{{model.metaType}}" title="{{model.name}}" href="#{{model._id}}">@{{model.name}}</a>
                 </li>
             </ul>
         </div>

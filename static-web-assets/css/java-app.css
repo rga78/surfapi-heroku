@@ -114,6 +114,10 @@ td {
     z-index: 10;
 }
 
+.overflow-hidden {
+    overflow: hidden;
+}
+
 
 ul.table-condensed {
     padding: 0px;

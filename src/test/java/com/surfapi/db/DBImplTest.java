@@ -11,17 +11,25 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.json.JSONTrace;
+import com.surfapi.junit.CaptureSystemOutRule;
 
 /**
  * 
  */
 public class DBImplTest {
+    
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
     
     /**
      * 

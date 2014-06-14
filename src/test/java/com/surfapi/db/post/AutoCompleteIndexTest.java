@@ -23,6 +23,7 @@ import com.surfapi.db.DBLoader;
 import com.surfapi.db.MongoDBImpl;
 import com.surfapi.db.MongoDBService;
 import com.surfapi.javadoc.JavadocMain;
+import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
 import com.surfapi.log.Log;
@@ -46,6 +47,12 @@ public class AutoCompleteIndexTest {
     @Rule
     public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
 
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
+    
     /**
      * 
      */

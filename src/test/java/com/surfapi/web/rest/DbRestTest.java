@@ -14,6 +14,7 @@ import org.glassfish.jersey.test.JerseyTest;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.surfapi.coll.Cawls;
@@ -22,12 +23,19 @@ import com.surfapi.db.DB;
 import com.surfapi.db.DBImpl;
 import com.surfapi.db.DBLoader;
 import com.surfapi.db.DBService;
+import com.surfapi.junit.CaptureSystemOutRule;
 
 /**
  * Auto-complete REST target.
  */
 public class DbRestTest extends JerseyTest {
 
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
+    
     /**
      * Install DbRest into the Jersey test container.
      */

@@ -1,5 +1,6 @@
 package com.surfapi.test;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -7,7 +8,7 @@ import java.util.Map;
  * 
  * Inherits all methods.
  */
-public class DemoJavadocSubClass2 extends DemoJavadocSubClass {
+public class DemoJavadocSubClass2 extends DemoJavadocSubClass implements Serializable {
 
 
     /**

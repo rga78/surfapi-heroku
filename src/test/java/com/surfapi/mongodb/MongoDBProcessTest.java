@@ -5,15 +5,22 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import org.json.simple.JSONObject;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoClient;
+import com.surfapi.junit.CaptureSystemOutRule;
 
 public class MongoDBProcessTest {
 
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
     
     @Test
     public void test() throws Exception {

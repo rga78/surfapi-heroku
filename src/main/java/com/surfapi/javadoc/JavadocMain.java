@@ -70,8 +70,12 @@ public class JavadocMain {
     /**
      * A filter for filtering OUT the subdirs that we DON'T want to process.
      * By default it filters out all subdirs under any directory named "test"
+     * 
+     * TODO: should also filter out:
+     *          internal
+     *          example/s ?
      */
-    private IOFileFilter subdirFilter = new FilterOutTest();
+    private IOFileFilter subdirFilter = new FilterOutDirs();
     
     /**
      * The library being processed.  This is provided as the first arg.

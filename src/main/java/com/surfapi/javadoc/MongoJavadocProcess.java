@@ -5,9 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.filefilter.IOFileFilter;
 
@@ -37,7 +39,7 @@ public class MongoJavadocProcess {
      * A filter for filtering OUT the subdirs that we DON'T want to process.
      * By default it filters out all subdirs under any directory named "test"
      */
-    private IOFileFilter subdirFilter = new FilterOutTest();
+    private IOFileFilter subdirFilter = new FilterOutDirs();
     
     /**
      * The name of the mongo db.
@@ -48,6 +50,16 @@ public class MongoJavadocProcess {
      * The libraryId (mongodb collection name).
      */
     private String libraryId;
+    
+    /**
+     * The executor service is used to throttle the number of active javadoc processes
+     * spawned by this class.  Some java libraries are huge (e.g the sdk) and will end
+     * up spawning hundreds of processes that may overwhelm the system if not throttled.
+     * The executor will effectively throttle the number of active javadoc processes
+     * to the number of threads the executor contains.  Each thread spawns a javadoc
+     * process and waits for that process to end before returning to the pool.
+     */
+    private ExecutorService executorService ;
     
     
     /**
@@ -112,37 +124,57 @@ public class MongoJavadocProcess {
      * Data for each process is written to mongodb.
      */
     protected void forkJavadocProcesses(File baseDir) throws IOException, InterruptedException {
-
-        List<ProcessHelper> processHelpers = new ArrayList<ProcessHelper>();
         
+        executorService = Executors.newFixedThreadPool(10);
+
         // Chunk java file names by package (directory).
         // This is necessary because of the problem where the packageDoc will only contain the
         // classes/exceptions/interfaces/etc that are included in the javadoc invocation.
         for ( List<String> javaFileNames : FileSystemUtils.chunkJavaFileNamesByDir(baseDir, getDirFilter()) ) {
-        
-            String processDescription = "javadoc against directory: " +  new File(javaFileNames.get(0)).getParentFile().getCanonicalPath();
-            Log.info(this, "run: " + processDescription);
             
-            processHelpers.add( new ProcessHelper( buildJavadocProcess(javaFileNames) )
-                                                .setDescription(processDescription)
-                                                .spawnStreamReaders() );
+            executorService.submit( buildJavadocProcessRunnable(javaFileNames) );
         }
         
-        // Wait for all the processHelpers to finish.
-        waitForAll(processHelpers);
+        Log.info(this, "forkJavadocProcesses: all javadoc work submitted. Shutting down executor and awaiting termination...");
+        executorService.shutdown();
+        executorService.awaitTermination(1,TimeUnit.HOURS);
+        Log.info(this, "forkJavadocProcesses: all javadoc processes completed");
+       
     }
     
     /**
-     * Wait for all the given processHelpers to finish.
+     * Build Runnable work for spawning and waiting for the javadoc process.
+     * 
+     * This work will be submitted to the executor.  The executor has a fixed-size 
+     * thread pool which effectively throttles the number of active javadoc processes 
+     * so as not to overwhelm the system.
+     * 
+     * @return A Runnable that will spawn and wait for the javadoc process.
      */
-    protected void waitForAll(Collection<ProcessHelper> processHelpers) throws InterruptedException {
-        for (ProcessHelper processHelper : processHelpers) {
-            processHelper.waitFor();
-            
-            if (processHelper.exitValue() != 0) {
-                Log.error(this, "waitForAll: " + new ProcessException( processHelper ));
+    protected Runnable buildJavadocProcessRunnable( final List<String> javaFileNames ) {
+        
+        return new Runnable() {
+            public void run() {
+                
+                try {
+                    
+                    String processDescription = "javadoc against directory: " +  new File(javaFileNames.get(0)).getParentFile().getCanonicalPath();
+                    Log.info(this, "run: " + processDescription);
+                    
+                    ProcessHelper processHelper = new ProcessHelper( buildJavadocProcess(javaFileNames) )
+                                                            .setDescription(processDescription)
+                                                            .spawnStreamReaders()
+                                                            .waitFor();
+
+                    if (processHelper.exitValue() != 0) {
+                        Log.error(this, "run: " + new ProcessException( processHelper ));
+                    }
+                    
+                } catch (Exception e) {
+                    Log.error(this, "run: " + e);
+                }
             }
-        }
+        };
     }
 
     /**

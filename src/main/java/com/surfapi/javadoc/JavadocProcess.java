@@ -48,7 +48,7 @@ public class JavadocProcess {
      * A filter for filtering OUT the subdirs that we DON'T want to process.
      * By default it filters out all subdirs under any directory named "test"
      */
-    private IOFileFilter subdirFilter = new FilterOutTest();
+    private IOFileFilter subdirFilter = new FilterOutDirs();
     
     /**
      * 

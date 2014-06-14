@@ -21,8 +21,6 @@ import com.surfapi.db.post.ReferenceNameQuery;
  */
 @Path("/q")
 public class QueryRest {
- 
-    
     
     /**
      * @return A list of queries?? YEAH. Think like an API!

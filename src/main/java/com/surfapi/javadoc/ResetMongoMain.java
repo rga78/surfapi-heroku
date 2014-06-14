@@ -21,9 +21,23 @@ public class ResetMongoMain {
         
         verifyEnv();
         
-        MongoDBService.getDb().drop();
-        Log.info( new ResetMongoMain(), "main: Reset DB.");
-
+        if (args.length == 0) {
+            usage();
+        } else if (args[0].equals("--db")) {
+            MongoDBService.getDb().drop();
+            Log.info( "ResetMongoMain: main: Dropped DB: " + MongoDBService.getDbName());
+        } else {
+            MongoDBService.getDb().drop( args[0] );
+            Log.info( "ResetMongoMain: main: Dropped collection: " + MongoDBService.getDbName() + "." + args[0]);
+        }
+    }
+    
+    /**
+     * 
+     */
+    protected static void usage() {
+        Log.info("ResetMongoMain: usage: <collection-name> | --db");
+        System.exit(-1);
     }
     
     /**

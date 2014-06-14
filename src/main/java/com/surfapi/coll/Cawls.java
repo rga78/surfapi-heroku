@@ -1,6 +1,7 @@
 package com.surfapi.coll;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -179,6 +180,13 @@ public class Cawls {
      */
     public static <T> Iterable<T> safeIterable(Iterable<T> iterable) {
         return (iterable != null) ? iterable : Collections.EMPTY_LIST;
+    }
+    
+    /**
+     * @return the given iterable, if not null; otherwise an empty list.
+     */
+    public static <T> Iterable<T> safeIterable(T[] iterable) {
+        return (iterable != null) ? Arrays.asList(iterable) : Collections.EMPTY_LIST;
     }
     
     /**

@@ -19,6 +19,7 @@ import com.surfapi.db.DBLoader;
 import com.surfapi.db.DBService;
 import com.surfapi.db.MongoDBImpl;
 import com.surfapi.db.post.ReferenceNameQuery;
+import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
 
@@ -40,6 +41,12 @@ public class QueryRestTest extends JerseyTest {
      */
     @Rule
     public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
 
     /**
      * Install AutoComplete into the Jersey test container.

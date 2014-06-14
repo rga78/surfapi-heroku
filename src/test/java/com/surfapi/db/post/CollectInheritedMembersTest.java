@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.surfapi.app.JavadocMapUtils;
@@ -17,13 +18,19 @@ import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
 import com.surfapi.db.DBImpl;
 import com.surfapi.db.DBLoader;
+import com.surfapi.junit.CaptureSystemOutRule;
 
 /**
  * 
  */
 public class CollectInheritedMembersTest {
 
-  
+
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
 
     /**
      *

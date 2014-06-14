@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.junit.Rule;
 import org.junit.Test;
 
+import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.log.Log;
 
 /**
@@ -18,7 +20,12 @@ import com.surfapi.log.Log;
  */
 public class FileSystemUtilsTest {
 
-
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
+    
     /**
      * 
      */
@@ -47,13 +54,13 @@ public class FileSystemUtilsTest {
         
         File baseDir = new File("src/test/java/");
         
-        Map<File, List<File>> fileMap = FileSystemUtils.listJavaFilesByDir(baseDir, new FilterOutTest());
+        Map<File, List<File>> fileMap = FileSystemUtils.listJavaFilesByDir(baseDir, new FilterOutDirs());
         
         assertTrue(fileMap.isEmpty());
         
         baseDir = new File("src/test/java/com/surfapi/test");
         
-        fileMap = FileSystemUtils.listJavaFilesByDir(baseDir, new FilterOutTest());
+        fileMap = FileSystemUtils.listJavaFilesByDir(baseDir, new FilterOutDirs());
         
         for (Map.Entry<File, List<File>> entry : fileMap.entrySet()) {
             for (File file : entry.getValue()) {

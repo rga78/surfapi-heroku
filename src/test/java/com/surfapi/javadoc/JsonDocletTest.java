@@ -10,10 +10,17 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
+import org.jmock.integration.junit4.JUnit4Mockery;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.junit.Rule;
 import org.junit.Test;
+
+import com.sun.javadoc.MethodDoc;
+import com.surfapi.junit.CaptureSystemOutRule;
 
 /**
  *
@@ -21,6 +28,12 @@ import org.junit.Test;
 public class JsonDocletTest {
 
  
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
+    
     /**
      *
      */
@@ -43,6 +56,39 @@ public class JsonDocletTest {
         assertEquals( "com.surfapi.test", ((JSONObject)doc.get(doc.size()-1)).get("name"));
     }
     
+    /**
+     * 
+     */
+    @Test
+    public void testGetInheritedCommentText() throws Exception {
+        
+        Mockery mockery = new JUnit4Mockery();
+        
+        final MethodDoc methodDoc1 = mockery.mock(MethodDoc.class, "methodDoc1");
+        final MethodDoc methodDoc2 = mockery.mock(MethodDoc.class, "methodDoc2"); // parent
+        
+        mockery.checking(new Expectations() {
+            {
+                oneOf(methodDoc1).overriddenMethod();
+                will(returnValue(methodDoc2));
+                
+                oneOf(methodDoc2).overriddenMethod();
+                will(returnValue(null));
+                
+                oneOf(methodDoc1).commentText();
+                will(returnValue("methodDoc1 commentText: {@inheritDoc}"));
+                
+                oneOf(methodDoc2).commentText();
+                will(returnValue("methodDoc2 commentText"));
+            }
+        });
 
+        
+        assertEquals( "methodDoc1 commentText: methodDoc2 commentText",
+                      new JsonDoclet(null).getInheritedCommentText(methodDoc1) );
+
+    }
 
 }
+
+

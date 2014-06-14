@@ -50,7 +50,8 @@
                 <div ng-controller="JavadocController">
 
                     <div ng-show="requestPending">
-                        <img src="icons/ajax-loader.gif" />
+                        <!-- img src="icons/ajax-loader.gif" /-->
+                        <img src="icons/progress-bar.gif" />
                     </div>
                 
                     <!-- Class/Interface/Enum/AnnotationType view -->
@@ -385,7 +386,7 @@
                     </div>
 
 
-                    <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" -->
+                    <pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson">
 
                 </div>
             </div>

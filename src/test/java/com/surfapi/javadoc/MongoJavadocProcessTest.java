@@ -16,8 +16,10 @@ import org.junit.Test;
 
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.MongoDBImpl;
+import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
+import com.surfapi.log.Log;
 
 /**
  * 
@@ -38,7 +40,12 @@ public class MongoJavadocProcessTest {
     @Rule
     public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
     
-
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
+    
     /**
      * 
      */
@@ -93,9 +100,10 @@ public class MongoJavadocProcessTest {
         assertEquals( 34, docs.size() );
         
         for (Map doc : docs) {
-            System.out.println("testJavadoc: " + doc.get("name") + ": " + doc.get("_id") );
+            Log.trace(this,"testJavadoc: " + doc.get("name") + ": " + doc.get("_id") );
         }
         
     }
+    
     
 }

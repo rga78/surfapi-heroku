@@ -1,11 +1,14 @@
 
 package com.surfapi.javadoc;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -32,6 +35,8 @@ import com.sun.javadoc.ThrowsTag;
 import com.sun.javadoc.Type;
 import com.sun.javadoc.TypeVariable;
 import com.sun.javadoc.WildcardType;
+import com.surfapi.coll.Cawls;
+import com.surfapi.coll.MapBuilder;
 import com.surfapi.json.JSONTrace;
 
 /**
@@ -74,14 +79,18 @@ import com.surfapi.json.JSONTrace;
 public class JsonDoclet {
 
     /**
+     * {@inheritDoc} is searched for and replaced in any methodDoc commentText, 
+     * @return, @param, or @throws comment in which it is found -- so long as 
+     * the overridden class/method is available to this javadoc process.
+     */
+    public static final String InheritDocTag = "{@inheritDoc}";
+
+    /**
      * Doclet entry point. Javadoc calls this method, passing in the
      * doc metadata.
      */
     public static boolean start(RootDoc root) {
-
         return new JsonDoclet(root).go();
-        
-       
     }
 
     /**
@@ -196,17 +205,20 @@ public class JsonDoclet {
     protected JSONObject processClassDoc(ClassDoc classDoc) {
 
         JSONObject classJson = processProgramElementDoc(classDoc);
-        classJson.putAll( processType(classDoc) );
+        classJson.putAll( processType(classDoc) );  // ???
 
         classJson.put("superclass", processClassDocStub(classDoc.superclass()));
         classJson.put("superclassType", processType(classDoc.superclassType()));
+        // TODO: classJson.put("allSuperclassTypes", getAllSuperclassTypes(classDoc));
 
         classJson.put("interfaces", processClassDocStubs(classDoc.interfaces()));
         classJson.put("interfaceTypes", processTypes(classDoc.interfaceTypes()));
+        // TODO: classJson.put("allInterfaceTypes", getAllUniqueInterfaceTypes(classDoc));
         classJson.put("typeParameters", processTypeVariables( classDoc.typeParameters() ) );
         classJson.put("typeParamTags", processParamTags( classDoc.typeParamTags() ) );
         
         classJson.put("methods", processMethodDocStubs(classDoc.methods()));
+        // TODO: classJson.put("allInheritedMethods", getAllInheritedMethods( classDoc ));
         classJson.put("constructors", processConstructorDocStubs( classDoc.constructors() ));
         classJson.put("fields", processFieldDocStubs(classDoc.fields()));
         classJson.put("enumConstants", processFieldDocStubs(classDoc.enumConstants()));
@@ -232,6 +244,44 @@ public class JsonDoclet {
      */
     protected JSONObject processClassDocStub(ClassDoc classDoc) {
         return processProgramElementDocStub(classDoc);
+    }
+    
+    /**
+     * @return a list of all superclass types
+     */
+    protected JSONArray getAllSuperclassTypes(ClassDoc classDoc) {
+        
+        JSONArray retMe = new JSONArray();
+        
+        if (classDoc != null && classDoc.superclass() != null) {
+            retMe.add( processType( classDoc.superclassType() ) );
+            retMe.addAll( getAllSuperclassTypes( classDoc.superclass() ) );
+        }
+        
+        return retMe;
+    }
+    
+    /**
+     * @return the unique set of all interface types implemented by the given classDoc
+     *         including interfaces implemented by superclasses.
+     */
+    protected List<Map> getAllUniqueInterfaceTypes(ClassDoc classDoc) {
+        return Cawls.uniqueForField( getAllInterfaceTypes(classDoc), "qualifiedTypeName" );
+    }
+    
+    /**
+     * @return a list of all superclass types
+     */
+    protected JSONArray getAllInterfaceTypes(ClassDoc classDoc) {
+        
+        JSONArray retMe = new JSONArray();
+        
+        if (classDoc != null) {
+            retMe.addAll( processTypes( classDoc.interfaceTypes() ) );
+            retMe.addAll( getAllInterfaceTypes( classDoc.superclass() ) );
+        }
+        
+        return retMe;
     }
 
     /**
@@ -298,11 +348,87 @@ public class JsonDoclet {
     protected JSONObject processConstructorDocStub(ConstructorDoc constructorDoc) {
         return processExecutableMemberDocStub(constructorDoc);
     }
+    
+    /**
+     * @return TODO
+     */
+    protected JSONArray getAllInheritedMethods(ClassDoc classDoc) {
+        JSONArray retMe = new JSONArray();
+        
+        // Keep track of methods we've already inherited so as not to 
+        // inherit them again from another superclass.
+        List<MethodDoc> alreadyInherited = new ArrayList<MethodDoc>();
+        
+        for ( ClassDoc superclassDoc = classDoc.superclass();
+              superclassDoc != null;
+              superclassDoc = superclassDoc.superclass() ) {
+            
+            List<MethodDoc> inheritedMethods = new ArrayList<MethodDoc>();
+        
+            for (MethodDoc supermethodDoc : superclassDoc.methods()) {
+                if ( !isMethodOverridden( supermethodDoc, classDoc.methods(), alreadyInherited ) ) {
+                    inheritedMethods.add( supermethodDoc );
+                }
+            }
+
+            if (inheritedMethods.size() > 0) {
+                retMe.add( processInheritedMethods( superclassDoc, inheritedMethods ) );
+                
+                // Keep track of inheritedMethods so as not to inherit them again from
+                // another superclass.
+                alreadyInherited.addAll( inheritedMethods );
+            }
+        }
+        
+        return retMe;
+    }
+    
+    /**
+     * @return true if the given supermethodDoc is overridden by one of the given methodDocs.
+     */
+    protected boolean isMethodOverridden( MethodDoc supermethodDoc, 
+                                          MethodDoc[] methodDocs, 
+                                          List<MethodDoc> alreadyInherited) {
+        for (MethodDoc methodDoc : methodDocs) {
+            if (methodDoc.overrides(supermethodDoc)) {
+                return true;
+            }
+        }
+        
+        for (MethodDoc methodDoc : alreadyInherited) {
+            if (methodDoc.overrides(supermethodDoc)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * @return { "superclassType": {}, "inheritedMethods": [ {}, {}, ... ] }
+     */
+    protected JSONObject processInheritedMethods(ClassDoc superclassDoc, List<MethodDoc> inheritedMethods) {
+        JSONObject retMe = new JSONObject();
+        retMe.put("superclassType", processType(superclassDoc));
+        retMe.put("inheritedMethods", processMethodDocStubs( inheritedMethods ) );
+        return retMe;
+    }
 
     /**
      * @return JSON stubs for the given MethodDoc[].
      */
     protected JSONArray processMethodDocStubs(MethodDoc[] methodDocs) {
+        JSONArray retMe = new JSONArray();
+        for (MethodDoc methodDoc: methodDocs) {
+            retMe.add( processMethodDocStub( methodDoc ) );
+        }
+        return retMe;
+    }
+    
+    /**
+     * @return JSON stubs for the given MethodDoc[].
+     */
+    protected JSONArray processMethodDocStubs(Collection<MethodDoc> methodDocs) {
         JSONArray retMe = new JSONArray();
         for (MethodDoc methodDoc: methodDocs) {
             retMe.add( processMethodDocStub( methodDoc ) );
@@ -349,8 +475,287 @@ public class JsonDoclet {
         JSONObject retMe = processExecutableMemberDoc(methodDoc);
 
         retMe.put("returnType", processType(methodDoc.returnType()));
+        retMe.put("overriddenMethod", processMethodDocStub(methodDoc.overriddenMethod() ) );
+        retMe.put("overriddenType", processTypeStub(methodDoc.overriddenType() ) );
+        
+        if (methodDoc.overriddenMethod() != null) {
+            inheritDoc(retMe, methodDoc);
+        }
         
         return retMe;
+    }
+    
+    /**
+     * Process any and all commentText/@return/@param/@throws tags that are
+     * either missing or contain "{@inheritDoc}" by walking up the inheritance
+     * tree looking for doc to inherit.
+     * 
+     * @return retMe
+     */
+    protected JSONObject inheritDoc(JSONObject retMe, MethodDoc methodDoc) {
+
+        retMe.put("commentText", getInheritedCommentText(methodDoc));
+ 
+        if ( !methodDoc.returnType().typeName().equals("void")) {
+            inheritReturnTag(retMe, methodDoc);
+        }
+
+        inheritParamTags(retMe, methodDoc);
+
+        inheritThrowsTags(retMe, methodDoc);
+
+        return retMe;
+    }
+
+    /**
+     * @return retMe
+     */
+    protected JSONObject inheritReturnTag(JSONObject retMe, MethodDoc methodDoc) {
+
+        String returnTagText = getInheritedReturnTagText(methodDoc);
+
+        if (! StringUtils.isEmpty( returnTagText ) ) {
+
+            // TODO: Cawls.replaceFirst would be a nice method to have....
+            JSONObject returnTag = (JSONObject) Cawls.findFirst( (List<Map>)retMe.get("tags"), new MapBuilder().append("name","@return") );
+
+            if (returnTag != null) {
+                returnTag.put("text", returnTagText);   // updates the list in place.
+            } else {
+                // Add a new tag to the list.
+                ((JSONArray)retMe.get("tags")).add( new MapBuilder().append("name", "@return")
+                                                                    .append("kind", "@return")
+                                                                    .append("text", returnTagText ) );
+            }
+        }
+
+        return retMe;
+    }
+
+    /**
+     * Either the paramTag exists or it doesn't.  If it doesn't, inherit.
+     * If it does, and contains {@inheritDoc}, resolve inherited doc.
+     *
+     * @return retMe
+     */
+    protected JSONObject inheritParamTags(JSONObject retMe, MethodDoc methodDoc) {
+
+        // First things first - compile a list of ParamTags.  If any are missing,
+        // inherit from the parent class.
+        List<ParamTag> paramTags = getInheritedParamTags(methodDoc);
+
+        List<Map> paramTagModels = new ArrayList<Map>();
+
+        for ( ParamTag paramTag : paramTags ) {
+
+            Map paramTagModel = processParamTag(paramTag);
+
+            paramTagModel.put("parameterComment",  getInheritedParamTagComment(methodDoc, paramTag.parameterName()) );
+
+            paramTagModels.add(paramTagModel);
+        }
+        
+        retMe.put("paramTags", paramTagModels);
+
+        return retMe;
+    }
+
+    /**
+     * @return retMe
+     */
+    protected JSONObject inheritThrowsTags(JSONObject retMe, MethodDoc methodDoc) {
+        // TODO
+        return retMe;
+    }
+ 
+    /**
+     * Resolve inherited comment text by scanning up the methodDoc's inheritance chain,
+     * resolving any {@inheritDoc} encountered along the way.
+     *
+     * This method returns as soon as it finds a non-empty commentText with all {@inheritDoc}
+     * tags resolved.
+     * 
+     * @return the comment text for the given methodDoc, all inheritance resolved.
+     */
+    protected String getInheritedCommentText(MethodDoc methodDoc) {
+
+        String retMe = null;
+        
+        for ( ;
+             methodDoc != null && (StringUtils.isEmpty(retMe) || retMe.contains(JsonDoclet.InheritDocTag) );
+             methodDoc = methodDoc.overriddenMethod() ) {
+
+            String commentText = methodDoc.commentText();
+            // -rx- Log.trace("getInheritedCommentText: commentText: " + commentText);
+            
+            if (StringUtils.isEmpty(retMe)) {
+                retMe = commentText;
+
+            } else if ( !StringUtils.isEmpty(commentText) ) {
+                // If retMe is not null, then it must still contain {@inheritDoc}.
+                // Replace it with the current methodDoc's commentText.
+                retMe = retMe.replace( JsonDoclet.InheritDocTag, commentText );
+            }
+        }
+        
+        return retMe;
+    }
+
+    /**
+     * Resolve inherited @return tag text by scanning up the methodDoc's inheritance chain,
+     * resolving any {@inheritDoc} encountered along the way.
+     *
+     * This method returns as soon as it finds a non-empty @return tag text with all {@inheritDoc}
+     * tags resolved.
+     *
+     * Note: the logic of this method is exactly the same as getInheritedCommentText.
+     *       The only difference is the value we're retrieving from the methodDoc (@return tag
+     *       text vs commentText).
+     * 
+     * @return the @return tag text for the given methodDoc, all inheritance resolved.
+     */
+    protected String getInheritedReturnTagText(MethodDoc methodDoc) {
+
+        String retMe = null;
+        
+        for ( ;
+             methodDoc != null && (StringUtils.isEmpty(retMe) || retMe.contains(JsonDoclet.InheritDocTag) );
+             methodDoc = methodDoc.overriddenMethod() ) {
+
+            String returnTagText = getReturnTagText( methodDoc );
+            
+            if (StringUtils.isEmpty(retMe) ) {
+                retMe = returnTagText;
+
+            } else if ( !StringUtils.isEmpty(returnTagText) ) {
+                // If retMe is not null, then it must still contain {@inheritDoc}.
+                // Replace it with the current methodDoc's return tag text.
+                retMe = retMe.replace( JsonDoclet.InheritDocTag, returnTagText);
+            }
+        }
+        
+        return retMe;
+    }
+
+    /**
+     * @return the @return tag text for the given methodDoc, or null if not found.
+     */
+    protected String getReturnTagText(MethodDoc methodDoc) {
+
+        for (Tag tag : Cawls.safeIterable(methodDoc.tags())) {
+            if (tag.name().equals("@return")) {
+                return tag.text();
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Resolve inherited @param tag text by scanning up the methodDoc's inheritance chain,
+     * resolving any {@inheritDoc} encountered along the way.
+     *
+     * This method returns as soon as it finds a non-empty @param tag text with all {@inheritDoc}
+     * tags resolved.
+     *
+     * Note: the logic of this method is exactly the same as getInheritedCommentText.
+     *       The only difference is the value we're retrieving from the methodDoc (@param tag
+     *       text vs commentText).
+     * 
+     * @return the @param tag text for the given methodDoc, all inheritance resolved.
+     */
+    protected String getInheritedParamTagComment(MethodDoc methodDoc, String parameterName) {
+
+        String retMe = null;
+        
+        for ( ;
+             methodDoc != null && (StringUtils.isEmpty(retMe) || retMe.contains(JsonDoclet.InheritDocTag) );
+             methodDoc = methodDoc.overriddenMethod() ) {
+
+            String paramTagComment = getParamTagComment( methodDoc, parameterName );
+            
+            if (StringUtils.isEmpty(retMe) ) {
+                retMe = paramTagComment;
+
+            } else if ( !StringUtils.isEmpty(paramTagComment) ) {
+                // If retMe is not null, then it must still contain {@inheritDoc}.
+                // Replace it with the current methodDoc's param tag text.
+                retMe = retMe.replace( JsonDoclet.InheritDocTag, paramTagComment);
+            }
+        }
+        
+        return retMe;
+    }
+
+    /**
+     * @return the @param tag comment for the given methodDoc and parameter, or null if not found.
+     */
+    protected String getParamTagComment(MethodDoc methodDoc, String parameterName) {
+
+        for (ParamTag paramTag : Cawls.safeIterable(methodDoc.paramTags())) {
+            if (paramTag.parameterName().equals( parameterName )) {
+                return paramTag.parameterComment();
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * @return the @param tag for the given parameterName
+     */
+    protected ParamTag getParamTag(ParamTag[] paramTags, String parameterName) {
+
+        for (ParamTag paramTag : Cawls.safeIterable(paramTags)) {
+            if (paramTag.parameterName().equals( parameterName )) {
+                return paramTag;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Resolve inherited @param tags.
+     *
+     * This method compiles a list of param tags for each of the given methodDoc's parameters.
+     * If a paramTag is missing from the given methodDoc, it is searched for in the method's
+     * inheritance chain.
+     * 
+     * @return a list of @param tags for the given methodDoc, some of which may be inherited.
+     */
+    protected List<ParamTag> getInheritedParamTags(MethodDoc methodDoc) {
+
+        List<ParamTag> retMe = new ArrayList<ParamTag>();
+
+        for ( Parameter parameter : methodDoc.parameters() ) {
+            
+            ParamTag paramTag = getInheritedParamTag( methodDoc, parameter.name() );
+            if (paramTag != null) {
+                retMe.add( paramTag );
+            }
+        }
+
+        return retMe;
+    }
+
+    /**
+     * @return the first non-null ParamTag with the given parameterName in the inheritance tree
+     *         for the given methodDoc.
+     */
+    protected ParamTag getInheritedParamTag(MethodDoc methodDoc, String parameterName)  {
+
+        for ( ;
+             methodDoc != null;
+             methodDoc = methodDoc.overriddenMethod() ) {
+
+            ParamTag retMe = getParamTag( methodDoc.paramTags(), parameterName );
+            if (retMe != null) {
+                return retMe;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -445,7 +850,7 @@ public class JsonDoclet {
         retMe.put("signature", emDoc.signature());
         retMe.put("parameters", processParameters(emDoc.parameters()));
         
-        retMe.put("paramTags", processParamTags(emDoc.paramTags()));     // TODO: already included with tags()
+        retMe.put("paramTags", processParamTags(emDoc.paramTags()));     
         retMe.put("thrownExceptions", processClassDocStubs(emDoc.thrownExceptions()));
         retMe.put("thrownExceptionTypes", processTypes(emDoc.thrownExceptionTypes()));
         retMe.put("typeParameters", processTypeVariables(emDoc.typeParameters()));

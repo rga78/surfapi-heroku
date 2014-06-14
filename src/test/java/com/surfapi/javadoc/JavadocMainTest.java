@@ -17,6 +17,7 @@ import org.junit.Test;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.MongoDBService;
+import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
 
@@ -38,6 +39,12 @@ public class JavadocMainTest {
      */
     @Rule
     public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
 
     /**
      * 

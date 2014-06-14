@@ -54,8 +54,8 @@ public class JavadocPostProcessor {
         Log.info(this, "postProcess: CollectInheritedMembers");
         db.forAll( libraryIds, new CollectInheritedMembers()) ;
 
-        Log.info(this, "postProcess: LinkOverriddenMethods");
-        db.forAll( libraryIds, new LinkOverriddenMethods() );
+        // Log.info(this, "postProcess: LinkOverriddenMethods");
+        // db.forAll( libraryIds, new LinkOverriddenMethods() );
 
         return this;
     }

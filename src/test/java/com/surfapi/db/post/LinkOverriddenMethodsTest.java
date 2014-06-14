@@ -8,17 +8,26 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.db.DB;
 import com.surfapi.db.DBImpl;
 import com.surfapi.db.DBLoader;
+import com.surfapi.junit.CaptureSystemOutRule;
 
 /**
  * 
  */
 public class LinkOverriddenMethodsTest {
+
+
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
 
     /**
      *

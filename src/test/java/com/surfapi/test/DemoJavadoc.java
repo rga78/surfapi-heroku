@@ -105,8 +105,12 @@ public abstract class DemoJavadoc<T extends List> implements Callable<String>, D
     
     /**
      * This is an abstract method.
+     * 
+     * @param strs an array of strings.
+     * 
+     * @return an int
      */
-    public abstract void someAbstractMethod(String[] strs);
+    public abstract int someAbstractMethod(String[] strs);
     
     /**
      * This is a static method.

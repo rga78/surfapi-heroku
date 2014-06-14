@@ -16,13 +16,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
+import org.junit.Rule;
 import org.junit.Test;
+
+import com.surfapi.junit.CaptureSystemOutRule;
 
 /**
  * 
  */
 public class JavadocProcessTest {
 
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
 
     /**
      * 
