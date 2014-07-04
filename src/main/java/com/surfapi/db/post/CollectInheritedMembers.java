@@ -17,6 +17,8 @@ import com.surfapi.db.DB;
  *
  * DEPENDENCY: ReferenceNameQuery must be built (for superclass lookups).
  * 
+ * TODO: change this to resolve cross-library only (inherited methods from the same
+ *       library are already included by MongoDoclet). 
  */
 public class CollectInheritedMembers implements DB.ForAll {
 
@@ -76,6 +78,45 @@ public class CollectInheritedMembers implements DB.ForAll {
 
             methodAccumulator.addAll(inheritedMethods);
             fieldAccumulator.addAll(inheritedFields);
+
+            superClassStub = (Map) superClassDoc.get("superclass");
+        }
+
+        return retMe;
+    }
+    
+    /**
+     * @return a list of inherited methods/fields from all known superclasses of the given doc.
+     */
+    protected List<Map> collectInheritedMembers2(DB db, Map doc) {
+        
+        List<Map> retMe = new ArrayList<Map>();
+        
+        // Accumulate inherited methods as we move up the inheritance tree.
+        // This keeps track of methods that were already inherited, so as not
+        // to match them again if a higher superclass also defines them.
+        // Start off with the doc's methods.
+        List<Map> methodAccumulator = new ArrayList<Map>((List<Map>) new EasyMap(doc).getList("methods"));
+
+        ReferenceNameQuery refQuery = new ReferenceNameQuery().inject(db);
+        
+        Map superClassStub = (Map) doc.get("superclass");
+
+        // Loop thru each superclass in the hierarchy
+        for (Map superClassDoc = refQuery.lookupSuperclassDoc(doc);
+             superClassDoc != null;
+             superClassDoc = refQuery.lookupSuperclassDoc(superClassDoc) ) {
+
+            // Filter for superclass methods that are inherited (i.e not overridden) by this doc
+            List<Map> inheritedMethods = selectInheritedMethods(methodAccumulator, (List<Map>)superClassDoc.get("methods"));
+
+            if (inheritedMethods.size() > 0 ) {
+                retMe.add( new MapBuilder().append("superclass", superClassStub)
+                                           .append("methods", inheritedMethods) );
+            }
+
+            methodAccumulator.addAll(inheritedMethods);
+
 
             superClassStub = (Map) superClassDoc.get("superclass");
         }

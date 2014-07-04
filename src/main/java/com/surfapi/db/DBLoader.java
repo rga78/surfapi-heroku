@@ -178,7 +178,7 @@ public class DBLoader {
     /**
      * @return an overview for the given library (e.g. a package list for a java library).
      */
-    protected Map createLibraryOverview(String libraryId) {
+    public Map createLibraryOverview(String libraryId) {
         
         List<Map> packageStubs = new ArrayList<Map>();
  
@@ -196,6 +196,8 @@ public class DBLoader {
   
 
     /**
+     * TODO: not used.
+     * 
      * Starting with a json file (produced by javadoc-json-doclet):
      *  1. create a new library (collection) for the json file 
      *  2. populate the new library with all documents in the json file

@@ -89,10 +89,18 @@ public class JavadocMapUtils {
     }
     
     /**
-     * @return the fully-qualified list of parameters, separated by ','.
+     * @return the fully-qualified list of parameter types, separated by ','.
      */
     public static String getParameterSignature(Map doc) {
-        
+        return getQualifiedParameterSignature(doc);
+    }
+    
+    
+    /**
+     * @return the fully-qualified list of parameter types, separated by ','.
+     */
+    public static String getQualifiedParameterSignature(Map doc) {
+    
         List<Map> parmTypes = (List<Map>) Cawls.pluck((List<Map>)doc.get("parameters"), "type");
         
         StringBuffer retMe = new StringBuffer("(");
@@ -100,7 +108,27 @@ public class JavadocMapUtils {
         for (Map parmType : parmTypes) {
             retMe.append(sep)
                  .append( parmType.get("qualifiedTypeName") )
-                 .append( parmType.get("dimension") );
+                 .append( ObjectUtils.firstNonNull( parmType.get("dimension"), "") );
+            sep = ",";
+        }
+        retMe.append(")");
+        
+        return retMe.toString();
+    }
+    
+    /**
+     * @return the non-qualified list of parameter types, separated by ','.
+     */
+    public static String getNonQualifiedParameterSignature(Map doc) {
+        
+        List<Map> parmTypes = (List<Map>) Cawls.pluck((List<Map>)doc.get("parameters"), "type");
+        
+        StringBuffer retMe = new StringBuffer("(");
+        String sep = "";
+        for (Map parmType : parmTypes) {
+            retMe.append(sep)
+                 .append( parmType.get("typeName") )
+                 .append( ObjectUtils.firstNonNull( parmType.get("dimension"), "") );
             sep = ",";
         }
         retMe.append(")");
@@ -218,6 +246,28 @@ public class JavadocMapUtils {
      */
     public static String getLibraryId(Map doc) {
         return (String) ((Map)doc.get(JavadocMapUtils.LibraryFieldName)).get("_id");
+    }
+
+    /**
+     * @return true if metaType="interface"
+     */
+    public static boolean isInterface(Map javadocModel) {
+        return "interface".equals(JavadocMapUtils.getMetaType(javadocModel));
+    }
+    
+    /**
+     * @return a subset of fields for displaying in an <sa-type> element.
+     */
+    public static Map buildTypeStub(Map javadocModel) {
+        return  Cawls.pick( javadocModel, 
+                            Arrays.asList( "_id",
+                                           "name", 
+                                           "qualifiedName", 
+                                           "qualifiedTypeName", 
+                                           "dimension", 
+                                           "typeName", 
+                                           "parameterizedType",
+                                           "wildcardType") ); 
     }
 
 

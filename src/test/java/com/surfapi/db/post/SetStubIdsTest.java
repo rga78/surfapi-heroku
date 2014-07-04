@@ -99,27 +99,27 @@ public class SetStubIdsTest {
         return stubs;
     }
 
-    /**
-     *
-     */
-    // @Test
-    public void testSetStubIdsIfSameLibrary() throws Exception {
-
-        DB db = new DBImpl();
-        new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") );
-        
-        String libraryId = "/java/com.surfapi/1.0";
-        
-        Map doc = db.read(libraryId, "/java/com.surfapi/1.0/com.surfapi.test.DemoJavadoc.getAnnotation(DemoJavadoc)");
-        assertNotNull(doc);
-        assertAllIdsAreNull( (Collection<Map>) doc.get("thrownExceptions") );
-        assertAllIdsAreNull( Arrays.asList( (Map) doc.get("returnType") ) );
-        assertAllIdsAreNull( (Collection<Map>) Cawls.pluck( (List<Map>) doc.get("parameters"), "type" ) );
-
-        new SetStubIds().setStubIds(db, libraryId, doc);
-
-        assertTrue( assertAllIdsAreSet( libraryId, (Collection<Map>) doc.get("thrownExceptions") ).size() > 0 );
-        assertTrue( assertAllIdsAreSet( libraryId, Arrays.asList( (Map) doc.get("returnType") ) ).size() > 0);
-        assertTrue( assertAllIdsAreSet( libraryId, (Collection<Map>) Cawls.pluck( (List<Map>) doc.get("parameters"), "type" ) ).size() > 0);
-    }
+//    /**
+//     *
+//     */
+//    // @Test
+//    public void testSetStubIdsIfSameLibrary() throws Exception {
+//
+//        DB db = new DBImpl();
+//        new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") );
+//        
+//        String libraryId = "/java/com.surfapi/1.0";
+//        
+//        Map doc = db.read(libraryId, "/java/com.surfapi/1.0/com.surfapi.test.DemoJavadoc.getAnnotation(DemoJavadoc)");
+//        assertNotNull(doc);
+//        assertAllIdsAreNull( (Collection<Map>) doc.get("thrownExceptions") );
+//        assertAllIdsAreNull( Arrays.asList( (Map) doc.get("returnType") ) );
+//        assertAllIdsAreNull( (Collection<Map>) Cawls.pluck( (List<Map>) doc.get("parameters"), "type" ) );
+//
+//        new SetStubIds().setStubIdsIfSameLibrary(db, libraryId, doc);
+//
+//        assertTrue( assertAllIdsAreSet( libraryId, (Collection<Map>) doc.get("thrownExceptions") ).size() > 0 );
+//        assertTrue( assertAllIdsAreSet( libraryId, Arrays.asList( (Map) doc.get("returnType") ) ).size() > 0);
+//        assertTrue( assertAllIdsAreSet( libraryId, (Collection<Map>) Cawls.pluck( (List<Map>) doc.get("parameters"), "type" ) ).size() > 0);
+//    }
 }

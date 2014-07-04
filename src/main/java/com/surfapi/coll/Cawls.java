@@ -209,4 +209,18 @@ public class Cawls {
         return retMe;
     }
 
+    /**
+     * @return the last item in the list, or null if the list is null or empty.
+     */
+    public static <T> T getLast(List<T> list) {
+        return (list == null || list.size() == 0) ? null : list.get( list.size() - 1 );
+    }
+
+    /**
+     * @return true if the given array is null or empty.
+     */
+    public static <T> boolean isEmpty(T[] arr) {
+        return (arr == null || arr.length == 0);
+    }
+
 }

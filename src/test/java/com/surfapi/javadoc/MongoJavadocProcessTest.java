@@ -2,6 +2,7 @@ package com.surfapi.javadoc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -52,6 +53,8 @@ public class MongoJavadocProcessTest {
     @Test
     public void testBuildCommand() throws Exception {
         
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
         File baseDir = new File("src/test/java/com/surfapi/test");
         MongoJavadocProcess javadocProcess = new MongoJavadocProcess(baseDir)
                                                     .setDocletPath( JavadocMain.buildDocletPath() )
@@ -80,6 +83,7 @@ public class MongoJavadocProcessTest {
      */
     @Test
     public void testJavadoc() throws Exception {
+        assumeTrue(mongoDBProcessRule.isStarted());
         
         String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
@@ -97,7 +101,7 @@ public class MongoJavadocProcessTest {
         List<Map> docs = new MongoDBImpl(dbName).find( libraryId, new MapBuilder());
         
         assertFalse( docs.isEmpty() );
-        assertEquals( 34, docs.size() );
+        assertEquals( JsonDocletTest.ExpectedTestJavadocSize, docs.size() );
         
         for (Map doc : docs) {
             Log.trace(this,"testJavadoc: " + doc.get("name") + ": " + doc.get("_id") );

@@ -3,7 +3,6 @@ package com.surfapi.db.post;
 import java.util.Collection;
 
 import com.surfapi.db.DB;
-import com.surfapi.log.Log;
 
 
 /**
@@ -45,14 +44,14 @@ public class JavadocPostProcessor {
      */
     public JavadocPostProcessor postProcess(Collection<String> libraryIds ) {
 
-        Log.info(this, "postProcess: SetStubIds");
-        db.forAll( libraryIds, new SetStubIds()) ;
+        // Log.info(this, "postProcess: SetStubIds");
+        // db.forAll( libraryIds, new SetStubIds()) ;
 
-        Log.info(this, "postProcess: CollectSuperClasses");
-        db.forAll( libraryIds, new CollectSuperClasses() );
+        // Log.info(this, "postProcess: CollectSuperClasses");
+        // db.forAll( libraryIds, new CollectSuperClasses() );
 
-        Log.info(this, "postProcess: CollectInheritedMembers");
-        db.forAll( libraryIds, new CollectInheritedMembers()) ;
+        // Log.info(this, "postProcess: CollectInheritedMembers");
+        // TODO: db.forAll( libraryIds, new CollectInheritedMembers()) ;
 
         // Log.info(this, "postProcess: LinkOverriddenMethods");
         // db.forAll( libraryIds, new LinkOverriddenMethods() );

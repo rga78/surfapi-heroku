@@ -8,8 +8,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
 
 import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.db.DB;
@@ -32,7 +32,7 @@ public class LinkOverriddenMethodsTest {
     /**
      *
      */
-    @Test
+    @Ignore // -rx-
     public void testOverrides() throws Exception {
 
         DB db = new DBImpl();
@@ -75,7 +75,7 @@ public class LinkOverriddenMethodsTest {
     /**
     *
     */
-   @Test
+   @Ignore // -rx-
    public void testImplements() throws Exception {
 
        DB db = new DBImpl();

@@ -1,6 +1,9 @@
 #!/bin/sh
+#
+# After running this script, don't forget to run the post-processor
+#   runJavadoc.sh PostProcessorMain /java/com.surfapi/1.1
 
-MONGO_DBNAME=test
+MONGO_DBNAME=test1
 MONGO_LIBRARYID=/java/com.surfapi/1.0
 
 # build the doclet path

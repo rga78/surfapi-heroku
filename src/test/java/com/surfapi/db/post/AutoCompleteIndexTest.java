@@ -85,6 +85,10 @@ public class AutoCompleteIndexTest {
             assertEquals( lib_v10, obj.get(JavadocMapUtils.LibraryFieldName) );
         }
         
+        // Verify case-insensitive search
+        List<Map> objs2 = new AutoCompleteIndex().inject(db).query( "java", "demo", 25 );
+        assertEquals(objs, objs2);
+        
         // Verify only the latest library version was used
         List<Map> libraries = (List<Map>) Cawls.pluck( objs, JavadocMapUtils.LibraryFieldName);
         assertNotNull( Cawls.findFirst( libraries, new MapBuilder().append( "_id", "/java/com.surfapi/1.0") ) );
@@ -141,6 +145,15 @@ public class AutoCompleteIndexTest {
         assertEquals( 2, objs.size() );
         assertNotNull( Cawls.findFirst( objs, new MapBuilder().append( "id", "/java/com.surfapi/1.0/com.surfapi.test") ) );
         assertNotNull( Cawls.findFirst( objs, new MapBuilder().append( "id", "/java/com.surfapi/1.0/com.surfapi.proc") ) );
+        
+        // Searching by the segment name 'surfapi.test'.  
+        objs = new AutoCompleteIndex().inject(db).query( "java", "surfapi.tes", 25 );
+        assertFalse( objs.isEmpty() );
+        for (Map obj : objs) {
+            Log.trace(this, "testPackageEntries: for search 'surfapi.tes': " + obj.get("id"));
+        }
+        assertEquals( 1, objs.size() );
+        assertNotNull( Cawls.findFirst( objs, new MapBuilder().append( "id", "/java/com.surfapi/1.0/com.surfapi.test") ) );
 
     }
 

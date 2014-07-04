@@ -225,7 +225,7 @@ public class MongoJavadocProcess {
      * @param subdirFilter 
      * @return this
      */
-    protected MongoJavadocProcess setDirFilter(IOFileFilter subdirFilter) {
+    public MongoJavadocProcess setDirFilter(IOFileFilter subdirFilter) {
         this.subdirFilter = subdirFilter;
         return this;
     }

@@ -191,5 +191,13 @@ public class DBImpl extends ConcurrentHashMap<String, Map<String, Map>> implemen
         return null;
     }
 
+    @Override
+    public void save(String collection, Collection<Map> docs) {
+       for (Map doc : docs) {
+           save(collection, doc);
+       }
+        
+    }
+
 
 }

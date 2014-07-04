@@ -2,6 +2,7 @@ package com.surfapi.coll;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -101,6 +102,37 @@ public class CawlsTest {
         assertSame(obj1, Cawls.findFirst(unique, new MapBuilder().append("id", "blah")));
         assertSame(obj3, Cawls.findFirst(unique, new MapBuilder().append("id", "blah2")));
         assertNull(Cawls.findFirst(unique, new MapBuilder().append("jerry", "seinfeld")));
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testUniqueForFieldObject() {
+        
+        Map<String, String> obj1 = new MapBuilder<String, String>()
+                                            .append("id", "blah")
+                                            .append("name", "george costanza");
+        Map<String, String> obj1b = new MapBuilder<String, String>()
+                                            .append("id", "blah")
+                                            .append("name", "george costanza");
+        
+        Map<String, Object> obj2 = new MapBuilder<String, Object>()
+                                            .append("id", "blah")
+                                            .append("jerry", "seinfeld")
+                                            .append("george", obj1);
+        Map<String, Object> obj3 = new MapBuilder<String, Object>()
+                                            .append("id", "blah2")
+                                            .append("larry", "david")
+                                            .append("george", obj1b);
+        
+        Collection<Map> collection = new ListBuilder<Map>().append(obj2)
+                                                            .append(obj3);
+                                       
+        List<Map> unique = Cawls.uniqueForField( collection, "george" );
+        assertEquals(1,  unique.size() );
+        
+        assertNotNull(Cawls.findFirst(unique, new MapBuilder().append("jerry", "seinfeld")));
     }
     
 

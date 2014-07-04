@@ -246,6 +246,11 @@ a {
 }
 
 
+.loading-msg {
+    font-weight: bold;
+    color: #bbb;
+}
+
 h1.model-title {
     margin: 0 0 25px 0;
 }
@@ -254,6 +259,19 @@ h1.model-title {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
     font-weight: bold;
     font-size: 110%;
+}
+
+ul.model-list > li,
+table.model-list > tr,
+table.model-list > tbody > tr {
+    border-bottom: solid 1px #ddd;
+    padding: 10px;
+}
+
+ul.model-list > li:last-child,
+table.model-list > tr:last-child,
+table.model-list > tbody > tr:last-child {
+    border-bottom: inherit;
 }
 
 .padding-lite {

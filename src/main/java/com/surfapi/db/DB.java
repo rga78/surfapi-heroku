@@ -14,9 +14,14 @@ public interface DB  {
     public static final String LibraryCollectionName = "libraries";
     
     /**
-     * Add the given doc element from the given library to the DB.
+     * Save the given document to the given collection in the DB.
      */
     public void save(String collection, Map obj) ;
+    
+    /**
+     * Save the given set of documents to the given collection in the DB.
+     */
+    public void save(String collection, Collection<Map> docs);
     
     /**
      * forAll callback.

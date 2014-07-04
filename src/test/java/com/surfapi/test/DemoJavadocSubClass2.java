@@ -32,6 +32,11 @@ public class DemoJavadocSubClass2 extends DemoJavadocSubClass implements Seriali
     public String simpleVarArg(DemoJavadoc... docs) {
         return "";
     }
+    
+    /**
+     * Testing what happens when a type isn't available to the javadoc tool.
+     */
+    // public String unknownType(com.surfapi.type.dont.exist.Huh huh);
 
 
 }

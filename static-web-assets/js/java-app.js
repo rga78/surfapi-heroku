@@ -83,7 +83,9 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     };
 
     var formatTypeName = function(type) {
-        return JavadocModelUtils.getName(type) + (type.dimension || "");
+        return (JavadocModelUtils.isMethod(type)) 
+               ? JavadocModelUtils.getQualifiedName(type)
+               : JavadocModelUtils.getName(type) + (type.dimension || "");
     }
 
     var asAnchor = function(type) {
@@ -93,7 +95,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     var asAnchorRef = function(type) {
         // TODO: getQualifiedName won't work with methods (need to put the '+' in there).  
         //       But currently methods are never formatted by this code so we're good for now.
-        return "<a href='#/q/java/qn/" + JavadocModelUtils.getQualifiedName(type) + "'>" + formatTypeName(type) + "</a>" ;
+        return "<a href='#/q/java/qn/" + JavadocModelUtils.getReferenceName(type) + "'>" + formatTypeName(type) + "</a>" ;
     }
 
     var asSpan = function(type) {
@@ -295,9 +297,41 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
         }
 
         var methodName = m[3];
+        var methodParms = m[4];
 
-        return (isEmpty(methodName)) ? qualifiedName : qualifiedName + "+" + methodName;
+        if ( !isEmpty(methodParms) ) {
+            methodParms = formatLinkTagMethodParms(methodParms);
+        }
+
+        return (isEmpty(methodName)) ? qualifiedName : qualifiedName + "+" + methodName + (methodParms || "");
     };
+
+    /**
+     * Format @see link tag method parms by removing all whitespace and arg names
+     * (leaving only the arg types).
+     *
+     * @return formatted link tag method parms
+     */
+    var formatLinkTagMethodParms = function(methodParms) {
+
+        if (methodParms.length <= 2) {
+            return methodParms;
+        }
+
+        // trim off ()
+        // split on ","
+        // parse out first word (type) only
+        // put it all back together.
+        var retMe = "(" 
+                + _.map( methodParms.substring(1, methodParms.length - 1).split(","),
+                         function(arg) {
+                             return arg.trim().split(" ")[0];
+                         }).join(",")
+                + ")";
+        console.log("formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
+
+        return retMe;
+    }
 
     /**
      * @return the html-encoded string (e.g "<code>" becomes "&lt;code&gt;")
@@ -395,7 +429,8 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     var isEmpty = Utils.isEmpty;
 
     var ClassMetaTypes = ["class", "interface", "annotationType", "enum"];
-    var ClassElementMetaTypes = ["method", "constructor", "field", "enumConstant"];
+    var ClassElementMetaTypes = ["method", "constructor", "field", "enumConstant"];     // why not annotationTypeElement?
+    var MethodMetaTypes = ["method", "constructor", "annotationTypeElement"];
 
     var getId = function( model ) {
         return (!isEmpty(model)) ? model._id : null;
@@ -406,8 +441,42 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     }
 
     var getQualifiedName = function(model) {
-        return (model.qualifiedName || model.qualifiedTypeName);
+        return (model.qualifiedName || model.qualifiedTypeName || model.name);  // model.name is for packages.
     }
+
+    var getQualifiedParameterSignature = function(model) {
+        return "(" + _.chain(model.parameters).pluck("type").pluck("qualifiedTypeName").value().join(",") + ")";
+    }
+
+    // -rx- var getReferenceName = function(model) {
+    // -rx-     switch( getMetaType(model) ) {
+    // -rx-         case "field":
+    // -rx-         case "enumConstant":
+    // -rx-         case "annotationTypeElement":
+    // -rx-             return getQualifiedName( getClassFor(model) ) + "+" + model.name;
+    // -rx-         case "method":
+    // -rx-         case "constructor":
+    // -rx-             return getQualifiedName( getClassFor(model) ) + "+" + model.name + getQualifiedParameterSignature(model);
+    // -rx-         default:
+    // -rx-             return getQualifiedName(model);
+    // -rx-     }
+    // -rx- }
+
+    var getReferenceName = function(model) {
+        switch( getMetaType(model) ) {
+            case "field":
+            case "enumConstant":
+            case "annotationTypeElement":
+                return getQualifiedName( model ).replace( new RegExp( "[.]" + model.name + "$"), "+" + model.name);
+            case "method":
+            case "constructor":
+                return getQualifiedName( model ).replace( new RegExp( "[.]" + model.name + "$"), "+" + model.name)
+                       + getQualifiedParameterSignature(model);
+            default:
+                return getQualifiedName(model);
+        }
+    }
+
 
     var getMetaType = function(model) {
         return (!isEmpty(model)) ? model.metaType : null;
@@ -415,6 +484,10 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
 
     var isClass = function(model) {
         return _.contains( ClassMetaTypes, getMetaType(model) );
+    }
+
+    var isMethod = function(model) {
+        return _.contains( MethodMetaTypes, getMetaType(model) );
     }
 
     var isClassElement = function(model) {
@@ -485,6 +558,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     this.getPackageFor = getPackageFor;
     this.getQualifiedName = getQualifiedName;
     this.getName = getName;
+    this.isMethod = isMethod;
     this.isClass = isClass;
     this.isClassElement = isClassElement;
     this.isPackage = isPackage;
@@ -492,6 +566,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     this.isLibraryVersions = isLibraryVersions;
     this.isLang = isLang;
     this.getUnformattedTags = getUnformattedTags;
+    this.getReferenceName = getReferenceName;
 })
 
 
@@ -592,6 +667,9 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
         }
     }
 
+    /**
+     * This method is called when the route/location.hash changes to "/java/q/qn/<referenceName>".
+     */
     var getReferenceType = function(id, prevId) {
         console.log("ReferenceQueryService.getReferencetype: " + id);
         var referenceName = id.substring( "/q/java/qn/".length );
@@ -603,7 +681,26 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
                  });
     }
 
+    /**
+     * TODO: would prefer the model from the most recent library.
+     *
+     * @return a promise that when fulfilled returns the _id of the first model
+     *         returned by the reference name query.
+     */
+    var resolveFirstId = function(referenceName) {
+
+        console.log("ReferenceQueryService.resolveFirstId: " + referenceName);
+        var restUrl = "/q/java/qn/" + referenceName;
+        return DbService.getQuietly( restUrl )
+                 .then( function(response) {
+                     var models = response.data;
+                     console.log("ReferenceQueryService.resolveFirstId.then: " + JSON.stringify(models));
+                     return (models.length > 0) ? models[0]._id : null;
+                 });
+    }
+
     this.getReferenceType = getReferenceType;
+    this.resolveFirstId = resolveFirstId;
 })
 
 /**
@@ -759,18 +856,29 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
 /**
  *
  */
-.controller( "MethodController", function($scope, DbService, ViewModelService, _, Formatter) {
+.controller( "MethodController", function($scope, 
+                                          DbService, 
+                                          ViewModelService, 
+                                          _, 
+                                          Formatter, 
+                                          Utils, 
+                                          JavadocModelUtils, 
+                                          ReferenceQueryService) {
+
+    /**
+     * @return the scope model (either a fieldDoc or methodDoc).
+     *  TODO: replace this with generic "model" field, if possible.
+     */
+    var getDoc = function() {
+        // TODO: return $scope.model;
+        return ( _.isUndefined( $scope.fieldDoc ) ) ? $scope.methodDoc : $scope.fieldDoc;
+    }
 
     /**
      * @return the _id of the doc object
      */
     var getDocId = function() {
-        // TODO: if ( ! _.isUndefined($scope.model) ) {
-        // TODO:     console.log("MethodController.getDocId: $scope.model._id: " + $scope.model._id);
-        // TODO:     return $scope.model._id;
-        // TODO: } else {
-            return ( _.isUndefined( $scope.fieldDoc ) ) ? $scope.methodDoc._id : $scope.fieldDoc._id;
-        // TODO: }
+        return getDoc()._id;
     }
     
     /**
@@ -781,23 +889,44 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     }
 
     /**
-     * Toggle the visibility of the full doc section.
+     * Lookup the given id to populate the full javadoc model and toggle the visibility of the full view.
      */
-    $scope.showFullDoc = function() {
-        if (isLocationHashOnId( getDocId() )) {
+    var showFullDocForId = function( _id) {
+
+        console.log("MethodController.showFullDocForId: " + _id);
+
+        // Check if the field/method is the primary view (and if so, don't bother toggling the full doc).
+        if (isLocationHashOnId( _id )) {
             return;
         }
 
-        this.showFullDocToggle = !this.showFullDocToggle;
+        $scope.showFullDocToggle = !$scope.showFullDocToggle;
 
-        if (this.showFullDocToggle) {
-            DbService.getQuietly( getDocId() )
+        if ($scope.showFullDocToggle) {
+            DbService.getQuietly( _id )
                             .success( function(data) {
+                               // -rx- console.log("MethodController.showFullDocForId.success: " + JSON.stringify(data));
                                $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
                                $scope.model = data;
                             });
         }
     }
+
+    /**
+     * Toggle the visibility of the full doc section.
+     */
+    $scope.showFullDoc = function() {
+
+        var id = getDocId();
+
+        if ( !Utils.isEmpty( id ) ) {
+            showFullDocForId(id);
+        } else {
+            ReferenceQueryService.resolveFirstId( JavadocModelUtils.getReferenceName( getDoc() ) )
+                                 .then( showFullDocForId );
+        }
+    }
+
 
     // Needed by the view to properly render the method signature
     $scope.formatMethodSignature = function() {

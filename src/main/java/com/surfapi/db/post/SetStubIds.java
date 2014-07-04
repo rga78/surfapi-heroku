@@ -3,6 +3,7 @@ package com.surfapi.db.post;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.coll.Cawls;
@@ -13,10 +14,7 @@ import com.surfapi.db.DB;
 /**
  * Iterate thru the DB and set the _id field for all javadoc element stubs.
  *
- * TODO: search across libraries for stub _id's.  Currently it only sets 
- *      _ids for stubs that reference a document from the same library.
- *
- * TODO: perhaps instead there should be an index of qualifiedNames. The front-end
+ * DONE: perhaps instead there should be an index of qualifiedNames. The front-end
  *       can link to a lookup of the type's qualifiedName against the index and
  *       return a list of all matches in a little pop-up.  This would eliminate
  *       the need for SetStubIds on most if not all fields.  If the qualifiedName
@@ -24,28 +22,127 @@ import com.surfapi.db.DB;
  *       The problem with that is several other javadoc post-processors depend
  *       on SetStubIds.  They would have to be changed to use the qualifiedNames index as well.
  *
+ * TODO: Post-process cross-library setStubIds still useful for:
+ *          overriddenMethod (not guaranteed)
+ *          inheritedMethods
+ *          
  */
 public class SetStubIds implements DB.ForAll {
 
+    
     /**
-     *
+     * TODO: this currently isn't called. is it needed?
      */
     @Override
     public void call(DB db, String collectionName, Map doc) {
-        db.save( collectionName, setStubIds(db, collectionName, doc) );
+        
+         db.save( collectionName, setStubIdsCrossLibrary(db, collectionName, doc) );
     }
 
     /**
-     * Add _id fields into all the stubs in the given document.
+     *  TODO: this currently isn't called. is it needed?
+     *  
+     * Add _id fields to cross-library stubs, e.g. overriddenMethod and allInheritedMethods.
      */
     @SuppressWarnings("rawtypes")
-    protected Map setStubIds(DB db, String libraryId, Map doc) {
+    protected Map setStubIdsCrossLibrary(DB db, String libraryId, Map doc) {
+        
+        if (JavadocMapUtils.isClass(doc)) {
+            setStubIdsCrossLibraryForClass(db, libraryId, doc);
+        }
         
         return setStubIdsForSameLibrary(libraryId, doc);
     }
     
     /**
+     *  TODO: this currently isn't called. is it needed?
+     *  
+     * Set stub IDs for stubs in the given class that may reference javadoc models from
+     * other libraries.  
      * 
+     * @return doc
+     */
+    protected Map setStubIdsCrossLibraryForClass(DB db, String libraryId, Map doc) {
+
+        for ( Map inherited : Cawls.safeIterable( (List<Map>) doc.get("allInheritedMethods") ) ) {
+            
+            Map superclassStub = (Map) inherited.get("superclassType");
+            
+            if ( superclassStub.get("_id") == null) {
+                // If the _id isn't set yet, then this stub must not be in the same library.
+                // Do a refernece name lookup to find the javadoc model.
+                Map lookupSuperclassStub = new ReferenceNameQuery().queryOne( JavadocMapUtils.getQualifiedName( superclassStub ), libraryId );
+                
+                if (lookupSuperclassStub != null) {
+                    // Found it.  Set its ID into the stub (and all inherited method stubs)
+                    superclassStub.put("_id", JavadocMapUtils.getId(lookupSuperclassStub));
+                    String crossLibraryId = JavadocMapUtils.getLibraryId(lookupSuperclassStub);
+                    
+                    for (Map inheritedMethodStub : (List<Map>)inherited.get("inheritedMethods")) {
+                        inheritedMethodStub.put("_id", JavadocMapUtils.buildId(crossLibraryId, inheritedMethodStub ));
+                    }
+                }
+            }
+        }
+        
+        return doc;
+    }
+    
+    
+    /**
+     * Called by MongoDoclet (not by PostProcessor).
+     * 
+     * @return javadocModels
+     */
+    public List<Map> setStubIdsForSameLibrary( String libraryId, List<Map> javadocModels, Set<String> libraryClassNames) {
+        for (Map javadocModel : javadocModels) {
+            setStubIdsForSameLibrary(libraryId, javadocModel, libraryClassNames);
+        }
+        return javadocModels;
+    }
+    
+    /**
+     * Called by MongoDoclet (not by PostProcessor).
+     * 
+     * @return javadocModel
+     */
+    public Map setStubIdsForSameLibrary( String libraryId, Map javadocModel, Set<String> libraryClassNames) {
+        
+        setStubIdsForSameLibrary(libraryId, javadocModel);
+        
+        if (JavadocMapUtils.isClass(javadocModel)) {
+            
+            // Set stub IDs for allSuperclassTypes, allInterfaceTypes, and allInheritedMethods,
+            // so long as the class is in the same library.
+            setClassStubIdsIfSameLibrary( libraryId,
+                                          (List<Map>) javadocModel.get("allSuperclassTypes"),
+                                          libraryClassNames );
+            
+            setClassStubIdsIfSameLibrary( libraryId,
+                                          (List<Map>) javadocModel.get("allInterfaceTypes"),
+                                          libraryClassNames );
+            
+            for ( Map inherited : Cawls.safeIterable( (List<Map>) javadocModel.get("allInheritedMethods") ) ) {
+                Map superclassStub = (Map) inherited.get("superclassType");
+                if ( libraryClassNames.contains( JavadocMapUtils.getQualifiedName( superclassStub ) ) ) {
+                    setStubIdHelper( libraryId, superclassStub );
+                    setStubIdsHelper( libraryId, (List<Map>) inherited.get("inheritedMethods"));
+                }
+            }
+        } else if (JavadocMapUtils.isMethod(javadocModel)) {
+            
+            setOverriddenMethodStubIdIfSameLibrary(libraryId, javadocModel, libraryClassNames);
+            
+        }
+        
+        return javadocModel;
+    }
+
+        
+        
+    /**
+     * Set stubIds for all stubs that are guaranteed to be in the same library.
+     * @return doc
      */
     public Map setStubIdsForSameLibrary( String libraryId, Map doc) {
 
@@ -126,20 +223,48 @@ public class SetStubIds implements DB.ForAll {
             if (db.read(libraryId, _id) != null) {
                 stub.put("_id", _id); 
             }
-            // TODO: find the library associated with the given stub in order to set the _id.
-            //       Could either maintain a mapping of relativeIds -> libraryIds, or
-            //       could just search every collection for the id.
-            // TODO: refs to foreign libraries that are hardened in the DB would get stale
-            //       as newer versions of the foreign library are added.  Perhaps instead
-            //       of storing the full id, just store the relative, and handle the relativeID
-            //       lookup on the REST call.
-            //       OR... periodically run the post-processor to update stale links.
-            //       (remember - the post-processor is idempotent, can run it over and over
-            //       and still end up with the same results (well, except for maybe an updated
-            //       version of a foreign-library _id).
         }
         return stub;
     }
+    
+    
+    /**
+     * Set Ids into the list of stubs by combining the stub's relativeId with
+     * the given libraryId -- IF AND ONLY IF the stub actually exists in this library.
+     * 
+     * Note: the stub objects are modified in place.
+     */
+    protected List<Map> setClassStubIdsIfSameLibrary(String libraryId, 
+                                                     List<Map> classStubs,  
+                                                     Set<String> libraryClassNames) {
+        
+        for (Map stub : Cawls.safeIterable(classStubs)) {
+            if ( libraryClassNames.contains( JavadocMapUtils.getQualifiedName(stub) ) ) {
+                setStubIdHelper(libraryId, stub);
+            }
+        }
+        
+        return classStubs;
+    }
+    
+    /**
+     * Set Ids into the list of stubs by combining the stub's relativeId with
+     * the given libraryId -- IF AND ONLY IF the stub actually exists in this library.
+     * 
+     * Note: the stub objects are modified in place.
+     */
+    protected Map setOverriddenMethodStubIdIfSameLibrary(String libraryId, 
+                                                         Map methodDoc, 
+                                                         Set<String> libraryClassNames) {
+        
+        Map overriddenType = (Map) methodDoc.get("overriddenType");
+        if (overriddenType != null && libraryClassNames.contains( JavadocMapUtils.getQualifiedName(overriddenType) )) {
+            setStubIdHelper(libraryId, (Map) methodDoc.get("overriddenMethod"));
+        }
+      
+        return methodDoc;
+    }
+ 
 
 }
 

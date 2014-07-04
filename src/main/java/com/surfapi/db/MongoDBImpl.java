@@ -56,6 +56,9 @@ public class MongoDBImpl implements DB {
         }
     }
 
+    /**
+     * 
+     */
     @Override
     public void save(String collection, Map obj) {
         // Log.log(this, "adding object with id: " + obj.get("_id"));
@@ -65,6 +68,16 @@ public class MongoDBImpl implements DB {
         } catch (Exception e) {
             throw new RuntimeException("Exception saving object " + obj.get("_id") + ": " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * 
+     */
+    @Override
+    public void save(String collection, Collection<Map> docs) {
+       for (Map doc : docs) {
+           save(collection, doc);
+       }
     }
 
     /**

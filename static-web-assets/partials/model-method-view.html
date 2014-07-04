@@ -1,5 +1,4 @@
 <div class="row" ng-controller="MethodController" >
-<!-- div class="row hover-pointer hover-highlight" ng-controller="MethodController" ng-click="showFullDoc()" -->
     <div class="code col-md-2">
 
         <!-- Annotations on the method, if any -->
@@ -15,7 +14,6 @@
     </div> 
     <div class="col-md-10">
         <div class="code">
-            <!-- a class="model-identifier" href="#{{methodDoc._id}}">{{methodDoc.name}}</a -->
             <a class="model-identifier" ng-click="showFullDoc()">{{methodDoc.name}}</a>
 
             <!-- method signature (includes annotations on any parms) -->
@@ -63,7 +61,7 @@
                                 <td>
                                     <span class="code"><sa-type doc="param.type"></sa-type> {{param.name}}</span>
                                 </td>
-                                <td ng-repeat="paramTag in methodDoc.paramTags | filter : { 'parameterName': param.name }">
+                                <td ng-repeat="paramTag in methodDoc.paramTags | filter : { 'parameterName': param.name } : true">
                                     <span ng-bind-html="paramTag.parameterComment | formatTags:methodDoc"></span>
                                 </td>
                             </tr>
@@ -123,23 +121,24 @@
             </div>
 
             <!-- overrides and implements -->
-            <div ng-if="methodDoc._overrides">
+            <div ng-if="methodDoc.overriddenMethod">
                 <h4>Overrides</h4>
                 <ul>
                     <li>
-                        <span class="code"><a href="#{{methodDoc._overrides._id}}">{{methodDoc._overrides.qualifiedName}}</a></span>
+                        <sa-type doc="methodDoc.overriddenMethod"></sa-type>
                     </li>
                 </ul>
             </div>
 
-            <div ng-if="methodDoc._implements">
+            <div ng-if="methodDoc.specifiedByMethod">
                 <h4>Implements</h4>
                 <ul>
                     <li>
-                        <span class="code" class="padding-horizontal-lite"><a href="#{{methodDoc._implements._id}}">{{methodDoc._implements.qualifiedName}}</a></span>
+                        <sa-type doc="methodDoc.specifiedByMethod"></sa-type>
                     </li>
                 </ul>
             </div>
+
 
             <!-- block tags -->
             <div ng-include="'partials/block-tags.html'" onload="model=methodDoc"></div>

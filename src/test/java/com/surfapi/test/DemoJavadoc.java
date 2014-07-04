@@ -186,5 +186,13 @@ public abstract class DemoJavadoc<T extends List> implements Callable<String>, D
     public static class StaticInnerClass {
         
     }
+    
+    /**
+     * 
+     */
+    @Override
+    public String toString() {
+        return "DemoJavadoc!";
+    }
 
 }

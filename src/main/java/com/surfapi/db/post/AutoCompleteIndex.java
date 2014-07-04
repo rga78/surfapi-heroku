@@ -114,7 +114,7 @@ public class AutoCompleteIndex {
             
             Log.info(this, "addLibraryToIndex: adding library " + libraryId + ", " + library.get("name"));
             
-            // Remove.
+            // Remove all existing entries for this library.
             db.remove( indexName, new MapBuilder<String, String>()
                                         .append( JavadocMapUtils.LibraryFieldName + ".name", (String) library.get("name")) );
             
@@ -184,10 +184,16 @@ public class AutoCompleteIndex {
      */
     public List<Map> query(String indexName, String text, int limitResults) {
         return db.find( buildAutoCompleteIndexName( indexName ), 
-                        new MapBuilder().append( "_searchName", new MapBuilder().append( "$regex", "^" + text + ".*") ), 
+                        new MapBuilder().append( "_searchName", new MapBuilder().append( "$regex", "^" + normalizeSearchName(text) + ".*") ), 
                         limitResults );
     }
     
+    /**
+     * @return the searchName, lowercase.
+     */
+    protected static String normalizeSearchName(String searchName) {
+        return searchName.toLowerCase();
+    }
     
     /**
      * Builds the index.
@@ -238,32 +244,52 @@ public class AutoCompleteIndex {
 
             if ( doc.isPackage() ) {
 
-                List<String> nameSegments = Arrays.asList( StringUtils.split( doc.getString("name"), "." ) );
-
-                // Insert for every segment except the first (the first is covered by the entry using the full name).
-                for (String nameSegment : nameSegments.subList( 1, nameSegments.size() ) ) {
+                // For packages, add entries not only for the fully qualified package name but also
+                // for each sub-segment of the package name.  E.g., for java.util.concurrent.atomic,
+                // also add entries for atomic, concurrent.atomic, util.concurrent.atomic.
+                for (String nameSegment : getQualifiedNameSegments( doc.getString("name") ) ) {
 
                     retMe.add( new MapBuilder<String,Object>().append("_id", UUID.randomUUID().toString()) 
                                                .append( "id", doc.getId() )     
-                                               .append( "_searchName", nameSegment )
+                                               .append( "_searchName", normalizeSearchName(nameSegment) )
                                                .append( "name", doc.getString("name") )
                                                .append( "qualifiedName", doc.getQualifiedName() )
                                                .append( JavadocMapUtils.LibraryFieldName, doc.getLibrary() ) );
                 }
+            } else {
+
+                // NOTE: deliberately not using "_id", because some documents may get inserted into the index more than once
+                //       for different search strings (e.g. packages are inserted for each segment of their name).
+
+                // Why not use mongodb's auto-assigned ID? Cuz the auto-assigned _id field in mongoDb is an ObjectId object, 
+                // which isn't a valid JSON element so the JSON can't be parsed.
+                retMe.add( new MapBuilder<String,Object>().append("_id", UUID.randomUUID().toString())
+                                                          .append( "id", doc.getId() )     
+                                                          .append( "_searchName", normalizeSearchName(doc.getString("name")) )
+                                                          .append( "name", doc.getString("name") )
+                                                          .append( "qualifiedName", doc.getQualifiedName() )
+                                                          .append( JavadocMapUtils.LibraryFieldName, doc.getLibrary() ) );
             }
 
-            // NOTE: deliberately not using "_id", because some documents may get inserted into the index more than once
-            //       for different search strings (e.g. packages are inserted for each segment of their name).
-            
-            // Why not use mongodb's auto-assigned ID? Cuz the auto-assigned _id field in mongoDb is an ObjectId object, 
-            // which isn't a valid JSON element so the JSON can't be parsed.
-            retMe.add( new MapBuilder<String,Object>().append("_id", UUID.randomUUID().toString())
-                                       .append( "id", doc.getId() )     
-                                       .append( "_searchName", doc.getString("name") )
-                                       .append( "name", doc.getString("name") )
-                                       .append( "qualifiedName", doc.getQualifiedName() )
-                                       .append( JavadocMapUtils.LibraryFieldName, doc.getLibrary() ) );
+            return retMe;
+        }
+        
+        /**
+         * 
+         * segmentName("java.nio.concurrent") => java.nio.concurrent, nio.concurrent, concurrent
+         * 
+         * @return the list of segmented names
+         */
+        protected List<String> getQualifiedNameSegments(String name) {
 
+            List<String> retMe = new ArrayList<String>();
+            
+            String[] segments = StringUtils.split(name, ".");
+            
+            for (int i=0; i < segments.length; ++i) {
+                retMe.add( StringUtils.join(segments, ".", i, segments.length) );
+            }
+            
             return retMe;
         }
 

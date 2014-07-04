@@ -5,12 +5,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -18,16 +23,32 @@ import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
-import com.surfapi.db.DBImpl;
-import com.surfapi.db.DBLoader;
+import com.surfapi.db.MongoDBImpl;
+import com.surfapi.javadoc.JavadocMain;
+import com.surfapi.javadoc.MongoJavadocProcess;
 import com.surfapi.junit.CaptureSystemOutRule;
+import com.surfapi.junit.DropMongoDBRule;
+import com.surfapi.junit.MongoDBProcessRule;
 
 /**
  * 
  */
 public class CollectSuperClassesTest {
 
-
+    /**
+     * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
+     * 
+     * Ensures a mongodb process is started.
+     */
+    @ClassRule
+    public static MongoDBProcessRule mongoDBProcessRule = new MongoDBProcessRule();
+    
+    /**
+     * Drops the given db before/after the entire collection of tests.
+     */
+    @ClassRule
+    public static DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    
     /**
      * Capture and suppress stdout unless the test fails.
      */
@@ -35,19 +56,45 @@ public class CollectSuperClassesTest {
     public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
 
     /**
+     * 
+     */
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        // Setup the db.
+        
+        String dbName = "test1";
+        String libraryId = "/java/com.surfapi/1.0";
+        
+        File baseDir = new File("src/test/java/com/surfapi/test");
+        MongoJavadocProcess javadocProcess = new MongoJavadocProcess(baseDir)
+                                                    .setDocletPath( JavadocMain.buildDocletPath() )
+                                                    .setDirFilter( TrueFileFilter.INSTANCE )
+                                                    .setMongoDBName( dbName )
+                                                    .setLibraryId(libraryId );
+        javadocProcess.run();
+        
+        // Build the reference name query
+        new ReferenceNameQuery().inject(new MongoDBImpl("test1")).buildIndex();
+    }
+    
+    /**
+     * 
+     */
+    @Before
+    public void before() {
+        assumeTrue(mongoDBProcessRule.isStarted());
+    }
+
+    /**
      *
      */
     @Test
     public void testGetSuperclasses() throws Exception {
 
-        DB db = new DBImpl();
-        new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") );
+        DB db = new MongoDBImpl("test1") ;
 
         String libraryId = "/java/com.surfapi/1.0";
-        
-        // Build the reference name query
-        new ReferenceNameQuery().inject(db).buildIndex();
-        
+          
         Map doc = db.read(libraryId + "/com.surfapi.test.DemoJavadocSubClass");
         assertNotNull(doc);
 
@@ -74,25 +121,20 @@ public class CollectSuperClassesTest {
     @Test
     public void testGetInterfaces() throws Exception {
 
-        DB db = new DBImpl();
-        new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") );
-
+        DB db = new MongoDBImpl("test1") ;
         String libraryId = "/java/com.surfapi/1.0";
 
-        // Build the reference name query
-        new ReferenceNameQuery().inject(db).buildIndex();
-   
         Map doc = db.read(libraryId + "/com.surfapi.test.DemoJavadocSubClass");
         assertNotNull(doc);
-        assertTrue( ((List)doc.get("interfaces")).isEmpty() );
-        assertNull(doc.get( JavadocMapUtils.InterfacesFieldName ) );
+        // assertNull(doc.get( JavadocMapUtils.InterfacesFieldName ) );
 
         List<Map> interfaces = new CollectSuperClasses().getInterfaces( db, doc );
 
-        assertEquals(2, interfaces.size());
+        assertEquals(3, interfaces.size());
         
         assertNotNull( Cawls.findFirst( interfaces, new MapBuilder().append( "qualifiedTypeName", "java.util.concurrent.Callable") ) );
         assertNotNull( Cawls.findFirst( interfaces, new MapBuilder().append( "qualifiedTypeName", "com.surfapi.test.DemoInterface") ) );
+        assertNotNull( Cawls.findFirst( interfaces, new MapBuilder().append( "qualifiedTypeName", "java.io.Serializable") ) );
     
         // Verify getInterfaces returns nothing when it should return nothing
         doc = db.read(libraryId + "/com.surfapi.test.DemoJavadocSubClass.call()");
@@ -108,13 +150,9 @@ public class CollectSuperClassesTest {
     @Test
     public void test() throws Exception {
 
-        DB db = new DBImpl();
-        new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") );
+        DB db = new MongoDBImpl("test1") ;
 
         String libraryId = "/java/com.surfapi/1.0";
-        
-        // Build the reference name query
-        new ReferenceNameQuery().inject(db).buildIndex();
 
         db.forAll( Arrays.asList(libraryId), new CollectSuperClasses() );
         db.forAll( Arrays.asList(libraryId), new CollectSuperClasses() ); // MUST BE IDEMPOTENT!
@@ -128,18 +166,20 @@ public class CollectSuperClassesTest {
 
         assertEquals(2, superclasses.size());
         Map superclass = superclasses.get(0);
-        assertEquals( "java.lang.Object", JavadocMapUtils.getQualifiedName(superclass) );
-        superclass = superclasses.get(1);
         assertEquals( "com.surfapi.test.DemoJavadoc", JavadocMapUtils.getQualifiedName(superclass) );
+        
+        superclass = superclasses.get(1);
+        assertEquals( "java.lang.Object", JavadocMapUtils.getQualifiedName(superclass) );
 
         // Verify interfaces...
         List<Map> interfaces = (List<Map>) doc.get( JavadocMapUtils.InterfacesFieldName) ;
         assertNotNull(interfaces);
 
-        assertEquals(2, interfaces.size());
+        assertEquals(3, interfaces.size());
         assertNotNull( Cawls.findFirst( interfaces, new MapBuilder().append( "qualifiedTypeName", "java.util.concurrent.Callable") ) );
         assertNotNull( Cawls.findFirst( interfaces, new MapBuilder().append( "qualifiedTypeName", "com.surfapi.test.DemoInterface") ) );
-
+        assertNotNull( Cawls.findFirst( interfaces, new MapBuilder().append( "qualifiedTypeName", "java.io.Serializable") ) );
+ 
         // Verify _superclasses and _interfaces is null when it should be null
         doc = db.read(libraryId + "/com.surfapi.test.DemoJavadocSubClass.call()");
         assertNotNull(doc);
