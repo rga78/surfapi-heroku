@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -24,8 +23,7 @@ import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
 import com.surfapi.db.MongoDBImpl;
-import com.surfapi.javadoc.JavadocMain;
-import com.surfapi.javadoc.MongoJavadocProcess;
+import com.surfapi.javadoc.SimpleJavadocProcess;
 import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
@@ -34,6 +32,12 @@ import com.surfapi.junit.MongoDBProcessRule;
  * 
  */
 public class CollectSuperClassesTest {
+    
+    /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
 
     /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
@@ -47,7 +51,7 @@ public class CollectSuperClassesTest {
      * Drops the given db before/after the entire collection of tests.
      */
     @ClassRule
-    public static DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    public static DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName);
     
     /**
      * Capture and suppress stdout unless the test fails.
@@ -62,19 +66,20 @@ public class CollectSuperClassesTest {
     public static void beforeClass() throws Exception {
         // Setup the db.
         
-        String dbName = "test1";
+        String dbName = MongoDbName;
         String libraryId = "/java/com.surfapi/1.0";
         
-        File baseDir = new File("src/test/java/com/surfapi/test");
-        MongoJavadocProcess javadocProcess = new MongoJavadocProcess(baseDir)
-                                                    .setDocletPath( JavadocMain.buildDocletPath() )
-                                                    .setDirFilter( TrueFileFilter.INSTANCE )
-                                                    .setMongoDBName( dbName )
-                                                    .setLibraryId(libraryId );
+        File baseDir = new File("src/test/java");
+        
+        SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
+                                                    .setMongoUri( MongoUri )
+                                                    .setLibraryId( libraryId )
+                                                    .setSourcePath( baseDir )
+                                                    .setPackages( Arrays.asList( "com.surfapi.test" ) );
         javadocProcess.run();
         
         // Build the reference name query
-        new ReferenceNameQuery().inject(new MongoDBImpl("test1")).buildIndex();
+        new ReferenceNameQuery().inject(new MongoDBImpl(MongoDbName)).buildIndex();
     }
     
     /**
@@ -91,7 +96,7 @@ public class CollectSuperClassesTest {
     @Test
     public void testGetSuperclasses() throws Exception {
 
-        DB db = new MongoDBImpl("test1") ;
+        DB db = new MongoDBImpl(MongoDbName) ;
 
         String libraryId = "/java/com.surfapi/1.0";
           
@@ -121,7 +126,7 @@ public class CollectSuperClassesTest {
     @Test
     public void testGetInterfaces() throws Exception {
 
-        DB db = new MongoDBImpl("test1") ;
+        DB db = new MongoDBImpl(MongoDbName) ;
         String libraryId = "/java/com.surfapi/1.0";
 
         Map doc = db.read(libraryId + "/com.surfapi.test.DemoJavadocSubClass");
@@ -150,7 +155,7 @@ public class CollectSuperClassesTest {
     @Test
     public void test() throws Exception {
 
-        DB db = new MongoDBImpl("test1") ;
+        DB db = new MongoDBImpl(MongoDbName) ;
 
         String libraryId = "/java/com.surfapi/1.0";
 

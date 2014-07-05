@@ -1,5 +1,6 @@
 package com.surfapi.db;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,6 +16,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.log.Log;
@@ -31,10 +33,32 @@ public class MongoDBImpl implements DB {
      */
     public MongoDBImpl(String dbName) {
         try {
-            mongoDB = new MongoClient().getDB(dbName);
+            mongoDB = connect(dbName);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    /**
+     * @return the mongodb uri
+     */
+    protected String getMongoUri(String dbName) {
+        return Cawls.firstNotEmpty(System.getenv("MONGOLAB_URI"), 
+                                   System.getProperty("MONGOLAB_URI"),
+                                   "mongodb://localhost/" + dbName);
+    }
+    
+    /**
+     * Connect either via the MONGOLAB_URI envvar or, if that's not defined,
+     * to the localhost.
+     */
+    protected com.mongodb.DB connect(String dbName) throws UnknownHostException {
+        
+        String uri = getMongoUri(dbName);
+        Log.info(this, "connect: URI: " + uri);
+            
+        MongoClientURI mongoUri  = new MongoClientURI(uri); 
+        return new MongoClient(mongoUri).getDB(mongoUri.getDatabase());
     }
     
     /**

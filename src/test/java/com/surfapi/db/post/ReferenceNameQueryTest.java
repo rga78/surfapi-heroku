@@ -34,6 +34,12 @@ import com.surfapi.log.Log;
 public class ReferenceNameQueryTest {
 
     /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
+    
+    /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
      * 
      * Ensures a mongodb process is started.
@@ -45,7 +51,7 @@ public class ReferenceNameQueryTest {
      * Drops the given db before/after each test.
      */
     @Rule
-    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName );
 
     /**
      * Capture and suppress stdout unless the test fails.
@@ -61,22 +67,21 @@ public class ReferenceNameQueryTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        String dbName = "test1";
         File sourcePath = new File("src/test/java");
 
-        new SimpleJavadocProcess().setMongoDBName( dbName )
+        new SimpleJavadocProcess().setMongoUri( MongoUri )
                                   .setLibraryId( "/java/com.surfapi/1.0" )
                                   .setSourcePath( sourcePath )
                                   .setPackages( Arrays.asList( "com.surfapi.test" ) )
                                   .run();
 
-        new SimpleJavadocProcess().setMongoDBName( dbName )
+        new SimpleJavadocProcess().setMongoUri( MongoUri )
                                   .setLibraryId( "/java/com.surfapi/0.9" )
                                   .setSourcePath( sourcePath )
                                   .setPackages( Arrays.asList( "com.surfapi.test" ) )
                                   .run();
         
-        DB db = new MongoDBImpl("test1");
+        DB db = new MongoDBImpl(MongoDbName);
         
         new ReferenceNameQuery().inject(db).buildIndex();
         
@@ -201,7 +206,7 @@ public class ReferenceNameQueryTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        DB db = new MongoDBImpl("test1");
+        DB db = new MongoDBImpl(MongoDbName);
         new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") )
                                  .loadFile( new File("src/test/resources/com.surfapi_0.9.json") );
         
@@ -253,16 +258,15 @@ public class ReferenceNameQueryTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        String dbName = "test1";
         File sourcePath = new File("src/test/java");
 
-        new SimpleJavadocProcess().setMongoDBName( dbName )
+        new SimpleJavadocProcess().setMongoUri( MongoUri )
                                   .setLibraryId( "/java/com.surfapi/1.0" )
                                   .setSourcePath( sourcePath )
                                   .setPackages( Arrays.asList( "com.surfapi.test" ) )
                                   .run();
 
-        DB db = new MongoDBImpl("test1");
+        DB db = new MongoDBImpl(MongoDbName);
         
         new ReferenceNameQuery().inject(db).addLibraryToIndex("/java/com.surfapi/1.0" );
         

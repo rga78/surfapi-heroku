@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -33,6 +32,12 @@ import com.surfapi.log.Log;
 public class MongoDocletTest {
     
     /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
+    
+    /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
      * 
      * Ensures a mongodb process is started.
@@ -44,7 +49,7 @@ public class MongoDocletTest {
      * Drops the given db before/after the entire collection of tests.
      */
     @ClassRule
-    public static DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    public static DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName );
     
     /**
      * Capture and suppress stdout unless the test fails.
@@ -54,21 +59,21 @@ public class MongoDocletTest {
 
     
     /**
-     * 
+     * Setup the db.
      */
     @BeforeClass
     public static void beforeClass() throws Exception {
-        // Setup the db.
+
+        assumeTrue(mongoDBProcessRule.isStarted());
         
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
+        File baseDir = new File("src/test/java");
         
-        File baseDir = new File("src/test/java/com/surfapi/test");
-        MongoJavadocProcess javadocProcess = new MongoJavadocProcess(baseDir)
-                                                    .setDocletPath( JavadocMain.buildDocletPath() )
-                                                    .setDirFilter( TrueFileFilter.INSTANCE )
-                                                    .setMongoDBName( dbName )
-                                                    .setLibraryId(libraryId );
+        SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
+                                                    .setMongoUri( MongoUri )
+                                                    .setLibraryId( libraryId )
+                                                    .setSourcePath( baseDir )
+                                                    .setPackages( Arrays.asList( "com.surfapi.test" ) );
         javadocProcess.run();
     }
     
@@ -86,10 +91,9 @@ public class MongoDocletTest {
     @Test
     public void testJavadoc() throws Exception {
         
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
         
-        List<Map> docs = new MongoDBImpl(dbName).find( libraryId, new MapBuilder());
+        List<Map> docs = new MongoDBImpl(MongoDbName).find( libraryId, new MapBuilder());
         
         assertFalse( docs.isEmpty() );
         assertEquals( JsonDocletTest.ExpectedTestJavadocSize, docs.size() );
@@ -106,13 +110,12 @@ public class MongoDocletTest {
     @Test
     public void testInheritedDoc() throws Exception {
 
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
        
-        Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadoc.parse(java.net.URL,java.util.List)" );
+        Map doc = new MongoDBImpl(MongoDbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadoc.parse(java.net.URL,java.util.List)" );
         assertNotNull(doc);
         
-        Map subDoc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass.parse(java.net.URL,java.util.List)" );
+        Map subDoc = new MongoDBImpl(MongoDbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass.parse(java.net.URL,java.util.List)" );
         assertNotNull(subDoc);
         
         // Test inherited doc
@@ -133,10 +136,9 @@ public class MongoDocletTest {
     @Test
     public void testInlineInheritedDoc() throws Exception {
 
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
         
-        Map subDoc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass.someAbstractMethod(java.lang.String[])" );
+        Map subDoc = new MongoDBImpl(MongoDbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass.someAbstractMethod(java.lang.String[])" );
         assertNotNull(subDoc);
         
         Log.trace( JSONTrace.prettyPrint(subDoc) );
@@ -159,10 +161,9 @@ public class MongoDocletTest {
     @Test
     public void testAllSuperclassTypes() throws Exception {
         
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
         
-        Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
+        Map doc = new MongoDBImpl(MongoDbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
         assertNotNull(doc);
         
         Log.trace( JSONTrace.prettyPrint(doc) );
@@ -187,10 +188,9 @@ public class MongoDocletTest {
     @Test
     public void testAllInterfaceTypes() throws Exception {
         
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
         
-        Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
+        Map doc = new MongoDBImpl(MongoDbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
         assertNotNull(doc);
         
         Log.trace( JSONTrace.prettyPrint(doc) );
@@ -215,10 +215,9 @@ public class MongoDocletTest {
     @Test
     public void testAllInheritedMethods() throws Exception {
         
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
         
-        Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
+        Map doc = new MongoDBImpl(MongoDbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
         assertNotNull(doc);
         
         Log.trace( JSONTrace.prettyPrint((List<Map>) doc.get("allInheritedMethods") ) );
@@ -277,7 +276,7 @@ public class MongoDocletTest {
     @Test
     public void testSetStubIds() throws Exception {
         
-        String dbName = "test1";
+        String dbName = MongoDbName;
         String libraryId = "/java/com.surfapi.test/1.0";
         
         Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass2" );
@@ -371,7 +370,7 @@ public class MongoDocletTest {
     @Test
     public void testSetStubIdOverriddenMethod() throws Exception {
         
-        String dbName = "test1";
+        String dbName = MongoDbName;
         String libraryId = "/java/com.surfapi.test/1.0";
         
         Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass.parse(java.net.URL,java.util.List)" );
@@ -387,7 +386,7 @@ public class MongoDocletTest {
     @Test
     public void testSpecifiedByMethod() throws Exception {
         
-        String dbName = "test1";
+        String dbName = MongoDbName;
         String libraryId = "/java/com.surfapi.test/1.0";
         
         Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoJavadocSubClass.interfaceMethod(java.lang.String)" );
@@ -410,7 +409,7 @@ public class MongoDocletTest {
     @Test
     public void testAllInheritedMethodsInterface() throws Exception {
         
-        String dbName = "test1";
+        String dbName = MongoDbName;
         String libraryId = "/java/com.surfapi.test/1.0";
         
         Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoInterfaceSubIntf" );
@@ -455,7 +454,7 @@ public class MongoDocletTest {
     @Test
     public void testAllSuperclassTypesForInterface() throws Exception {
         
-        String dbName = "test1";
+        String dbName = MongoDbName;
         String libraryId = "/java/com.surfapi.test/1.0";
         
         Map doc = new MongoDBImpl(dbName).read( "/java/com.surfapi.test/1.0/com.surfapi.test.DemoInterfaceSubIntf" );

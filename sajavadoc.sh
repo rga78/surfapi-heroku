@@ -15,7 +15,12 @@ if [ -z $2 ]; then
     exit 1
 fi
 
-MONGO_DBNAME=test
+
+if [ -z $MONGOLAB_URI ]; then
+    MONGOLAB_URI=mongodb://localhost/test
+fi
+
+echo "connecting to $MONGOLAB_URI..."
 
 MONGO_LIBRARYID=$1
 shift
@@ -29,7 +34,7 @@ javadoc \
         -docletpath "$dp" \
         -J-Xms1024m \
         -J-Xmx4096m \
-        -J-Dcom.surfapi.mongo.db.name=$MONGO_DBNAME \
+        -J-DMONGOLAB_URI=$MONGOLAB_URI \
         -J-Dcom.surfapi.mongo.library.id=$MONGO_LIBRARYID \
         $*
         

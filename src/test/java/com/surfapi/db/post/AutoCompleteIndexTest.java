@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -21,8 +22,7 @@ import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
 import com.surfapi.db.DBLoader;
 import com.surfapi.db.MongoDBImpl;
-import com.surfapi.db.MongoDBService;
-import com.surfapi.javadoc.JavadocMain;
+import com.surfapi.javadoc.SimpleJavadocProcess;
 import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
@@ -33,6 +33,13 @@ import com.surfapi.log.Log;
  */
 public class AutoCompleteIndexTest {
 
+    /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
+    
+    
     /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
      * 
@@ -45,7 +52,7 @@ public class AutoCompleteIndexTest {
      * Drops the given db before/after each test.
      */
     @Rule
-    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName );
 
     /**
      * Capture and suppress stdout unless the test fails.
@@ -67,7 +74,7 @@ public class AutoCompleteIndexTest {
         File testJsonFile = new File("src/test/resources/com.surfapi_1.0.json");
         assertTrue(testJsonFile.exists());
         
-        DB db = new MongoDBImpl("test1");
+        DB db = new MongoDBImpl(MongoDbName);
         new DBLoader().inject(db).loadFile( testJsonFile )
                                 .loadFile( new File("src/test/resources/com.surfapi_0.9.json") );
         
@@ -104,7 +111,7 @@ public class AutoCompleteIndexTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        DB db = new MongoDBImpl("test1");
+        DB db = new MongoDBImpl(MongoDbName);
         new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") )
                                  .loadFile( new File("src/test/resources/com.surfapi_0.9.json") );
         
@@ -169,7 +176,7 @@ public class AutoCompleteIndexTest {
         Map lib_v09 = JavadocMapUtils.mapLibraryId( "/java/com.surfapi/0.9" );
         
         // Add the older version to the db first.
-        DB db = new MongoDBImpl("test1");
+        DB db = new MongoDBImpl(MongoDbName);
         new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_0.9.json") );
         
         // The older version is the only one of its kind, so yeah, add it.
@@ -217,15 +224,25 @@ public class AutoCompleteIndexTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        MongoDBService.setDbName( "test1" );
-        DB db = MongoDBService.getDb();
-        
         String testLibraryId = "/java/com.surfapi.test/1.0";
         String libraryId = "/java/com.surfapi/1.0";
         
         // Insert both libraries.
-        JavadocMain.main( new String[] { "--all", testLibraryId, "src/test/java/com/surfapi/test" } );
-        JavadocMain.main( new String[] { "--all", libraryId, "src/main/java/com/surfapi/proc" } );
+        new SimpleJavadocProcess()
+        .setMongoUri( MongoUri )
+        .setLibraryId( testLibraryId )
+        .setSourcePath( new File("src/test/java") )
+        .setPackages( Arrays.asList( "com.surfapi.test" ) )
+        .run();
+
+        new SimpleJavadocProcess()
+        .setMongoUri( MongoUri )
+        .setLibraryId( libraryId )
+        .setSourcePath( new File("src/main/java") )
+        .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+        .run();
+        
+        DB db =new MongoDBImpl(MongoDbName);
         
         // Add both to the auto-complete index
         new AutoCompleteIndex().inject(db).addLibraryToIndex( testLibraryId ) ;

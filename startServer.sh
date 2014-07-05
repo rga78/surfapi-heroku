@@ -6,12 +6,15 @@ if [ -z $1 ]; then
     exit 1
 fi
 
-MONGO_DBNAME=test
+if [ -z $MONGOLAB_URI ]; then
+    MONGOLAB_URI=mongodb://localhost/test
+fi
+
+echo connecting to MONGOLAB_URI=$MONGOLAB_URI
 
 MAIN=$1
 shift
 
-# echo "java -Xms1024m -Xmx4096m -cp 'target/classes;target/dependency/*' -Dcom.surfapi.mongo.db.name=$MONGO_DBNAME com.surfapi.web.$MAIN $*"
-echo "java -cp 'target/classes;target/dependency/*' -Dcom.surfapi.mongo.db.name=$MONGO_DBNAME com.surfapi.web.$MAIN $*"
-start mintty -p 30,30 -e java -cp 'target/classes;target/dependency/*' -Dcom.surfapi.mongo.db.name=$MONGO_DBNAME com.surfapi.web.$MAIN $*
+echo "java -cp 'target/classes;target/dependency/*' -DMONGOLAB_URI=$MONGOLAB_URI com.surfapi.web.$MAIN $*"
+start mintty -p 30,30 -e java -cp 'target/classes;target/dependency/*' -DMONGOLAB_URI=$MONGOLAB_URI com.surfapi.web.$MAIN $*
 

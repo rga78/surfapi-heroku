@@ -1,7 +1,5 @@
 package com.surfapi.javadoc;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.surfapi.db.MongoDBService;
 import com.surfapi.log.Log;
 
@@ -18,9 +16,7 @@ public class ResetMongoMain {
      * 
      */
     public static void main(String[] args) throws Exception {
-        
-        verifyEnv();
-        
+
         if (args.length == 0) {
             usage();
         } else if (args[0].equals("--db")) {
@@ -39,14 +35,6 @@ public class ResetMongoMain {
         Log.info("ResetMongoMain: usage: <collection-name> | --db");
         System.exit(-1);
     }
-    
-    /**
-     * Verify the mongo db name has been configured in the env.
-     */
-    protected static void verifyEnv() {
-        if (StringUtils.isEmpty( System.getProperty("com.surfapi.mongo.db.name") ) ) {
-            throw new RuntimeException("System property 'com.surfapi.mongo.db.name' must be set");
-        }
-    }
+
     
 }

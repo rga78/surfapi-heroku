@@ -5,8 +5,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.surfapi.log.Log;
 import com.surfapi.proc.ProcessException;
@@ -20,8 +24,7 @@ import com.surfapi.proc.ProcessHelper;
  *      -docletpath "target/classes;$dp" \
  *      -J-Xms1024m \
  *      -J-Xmx4096m \
- *      -J-Dcom.surfapi.mongo.db.name=$MONGO_DBNAME \
- *
+ *      -J-DMONGOLAB_URI=$MONGOLAB_URI \
  *      -J-Dcom.surfapi.mongo.library.id=$MONGO_LIBRARYID \
  *      -sourcepath /fox/tmp/javadoc/src-jdk7   \
  *      [ -subpackages javax  | <package-list> ]
@@ -36,9 +39,9 @@ public class SimpleJavadocProcess {
     private File sourcePath;
     
     /**
-     * The name of the mongo db.
+     * The mongo URI
      */
-    private String mongoDBName;
+    private String mongoUri;
 
     /**
      * The libraryId (mongodb collection name).
@@ -59,22 +62,41 @@ public class SimpleJavadocProcess {
      * @return the classpath (-docletpath) for the custom doclet.
      */
     protected String getDocletPath() throws IOException {
-        return JavadocMain.buildDocletPath();
+        return buildMavenDocletPath();
+    }
+    
+    /**
+     * Build a doclet path that contains the classes from this project along
+     * with all dependency jars.
+     * 
+     * @return the classpath (-docletpath) for the custom doclet.
+     */
+    public static String buildMavenDocletPath() throws IOException {
+        
+        File dependencyDir = new File("./target/dependency");
+        Collection<File> jarFiles = FileUtils.listFiles(dependencyDir, new String[] { "jar"}, false);
+        List<String> jarFileNames = FileSystemUtils.mapToFileNames(jarFiles);
+        
+        String jarFileClassPath = StringUtils.join(jarFileNames, File.pathSeparator);
+        
+        return "./target/classes" 
+                + File.pathSeparator
+                + jarFileClassPath;
     }
     
     /**
      * @return this
      */
-    public SimpleJavadocProcess setMongoDBName(String mongoDBName) {
-        this.mongoDBName = mongoDBName;
+    public SimpleJavadocProcess setMongoUri(String mongoUri) {
+        this.mongoUri = mongoUri;
         return this;
     }
     
     /**
-     * @return the mongo db name.
+     * @return the mongo uri
      */
-    public String getMongoDBName() {
-        return mongoDBName;
+    public String getMongoUri() {
+        return mongoUri;
     }
     
     /**
@@ -200,7 +222,7 @@ public class SimpleJavadocProcess {
                                                       MongoDoclet.class.getCanonicalName(),
                                                       "-J-Xms1024m",
                                                       "-J-Xmx4096m",
-                                                      "-J-Dcom.surfapi.mongo.db.name=" + getMongoDBName(),
+                                                      "-J-DMONGOLAB_URI=" + getMongoUri(),
                                                       "-J-Dcom.surfapi.mongo.library.id=" + getLibraryId(),
                                                       "-sourcepath",
                                                       getSourcePath().getCanonicalPath()

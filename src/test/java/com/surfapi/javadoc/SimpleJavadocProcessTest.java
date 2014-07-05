@@ -27,6 +27,12 @@ import com.surfapi.log.Log;
  * 
  */
 public class SimpleJavadocProcessTest {
+    
+    /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
 
     /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
@@ -40,7 +46,7 @@ public class SimpleJavadocProcessTest {
      * Drops the given db before/after each test.
      */
     @Rule
-    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName );
     
     /**
      * Capture and suppress stdout unless the test fails.
@@ -56,19 +62,19 @@ public class SimpleJavadocProcessTest {
         
         File sourcePath = new File("src/test/java");
         SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
-                                                    .setMongoDBName( "test1" )
+                                                    .setMongoUri( MongoUri )
                                                     .setLibraryId( "/java/com.surfapi.test/1.0" )
                                                     .setSourcePath( sourcePath )
                                                     .setPackages( Arrays.asList( "com.surfapi.test", "com.surfapi.coll" ) );
         
         List<String> expectedCommand = new ArrayList<String>( Arrays.asList( new String[] { "javadoc", 
                                                                                             "-docletpath",
-                                                                                            JavadocMain.buildDocletPath(),
+                                                                                            SimpleJavadocProcess.buildMavenDocletPath(),
                                                                                             "-doclet",
                                                                                             MongoDoclet.class.getCanonicalName(),
                                                                                             "-J-Xms1024m",
                                                                                             "-J-Xmx4096m",
-                                                                                            "-J-Dcom.surfapi.mongo.db.name=test1",
+                                                                                            "-J-DMONGOLAB_URI=" + MongoUri,
                                                                                             "-J-Dcom.surfapi.mongo.library.id=/java/com.surfapi.test/1.0",
                                                                                             "-sourcepath",
                                                                                             sourcePath.getCanonicalPath(),
@@ -87,19 +93,19 @@ public class SimpleJavadocProcessTest {
         
         File sourcePath = new File("src/test/java");
         SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
-                                                    .setMongoDBName( "test1" )
+                                                    .setMongoUri( MongoUri )
                                                     .setLibraryId( "/java/com.surfapi.test/1.0" )
                                                     .setSourcePath( sourcePath )
                                                     .setSubpackages( Arrays.asList( "com.surfapi.test", "com.surfapi.coll" ) );
         
         List<String> expectedCommand = new ArrayList<String>( Arrays.asList( new String[] { "javadoc", 
                                                                                             "-docletpath",
-                                                                                            JavadocMain.buildDocletPath(),
+                                                                                            SimpleJavadocProcess.buildMavenDocletPath(),
                                                                                             "-doclet",
                                                                                             MongoDoclet.class.getCanonicalName(),
                                                                                             "-J-Xms1024m",
                                                                                             "-J-Xmx4096m",
-                                                                                            "-J-Dcom.surfapi.mongo.db.name=test1",
+                                                                                            "-J-DMONGOLAB_URI=" + MongoUri,
                                                                                             "-J-Dcom.surfapi.mongo.library.id=/java/com.surfapi.test/1.0",
                                                                                             "-sourcepath",
                                                                                             sourcePath.getCanonicalPath(),
@@ -119,19 +125,17 @@ public class SimpleJavadocProcessTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        
-        String dbName = "test1";
         String libraryId = "/java/com.surfapi.test/1.0";
         File sourcePath = new File("src/test/java");
 
         SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
-                                                    .setMongoDBName( dbName )
+                                                    .setMongoUri( MongoUri )
                                                     .setLibraryId( libraryId )
                                                     .setSourcePath( sourcePath )
                                                     .setPackages( Arrays.asList( "com.surfapi.test" ) );
         javadocProcess.run();
         
-        List<Map> docs = new MongoDBImpl(dbName).find( libraryId, new MapBuilder());
+        List<Map> docs = new MongoDBImpl(MongoDbName).find( libraryId, new MapBuilder());
         
         assertFalse( docs.isEmpty() );
         assertEquals( JsonDocletTest.ExpectedTestJavadocSize, docs.size() );
@@ -149,20 +153,18 @@ public class SimpleJavadocProcessTest {
     public void testJavadocWithSubpackages() throws Exception {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
-        
-        
-        String dbName = "test1";
+
         String libraryId = "/java/com.surfapi.test/1.0";
         File sourcePath = new File("src/test/java");
 
         SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
-                                                    .setMongoDBName( dbName )
+                                                    .setMongoUri( MongoUri )
                                                     .setLibraryId( libraryId )
                                                     .setSourcePath( sourcePath )
                                                     .setSubpackages( Arrays.asList( "com.surfapi.db" ) );
         javadocProcess.run();
         
-        List<Map> docs = new MongoDBImpl(dbName).find( libraryId, new MapBuilder());
+        List<Map> docs = new MongoDBImpl(MongoDbName).find( libraryId, new MapBuilder());
         
         assertFalse( docs.isEmpty() );
 

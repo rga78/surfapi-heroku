@@ -135,5 +135,19 @@ public class CawlsTest {
         assertNotNull(Cawls.findFirst(unique, new MapBuilder().append("jerry", "seinfeld")));
     }
     
+    /**
+     * 
+     */
+    @Test
+    public void testFirstNotEmpty() {
+        assertEquals( "1", Cawls.firstNotEmpty("1", null) );
+        assertEquals( "1", Cawls.firstNotEmpty(null, "1") );
+        assertEquals( "1", Cawls.firstNotEmpty("", "1") );
+        assertEquals( "1", Cawls.firstNotEmpty(null, "", "1") );
+        assertEquals( "1", Cawls.firstNotEmpty(null, "", "1", null) );
+        assertEquals( "1", Cawls.firstNotEmpty("", "", "1") );
+        assertEquals( "1", Cawls.firstNotEmpty(null, null, "1") );
+        assertEquals( "1", Cawls.firstNotEmpty(null, null, "1") );
+    }
 
 }

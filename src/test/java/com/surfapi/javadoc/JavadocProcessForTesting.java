@@ -26,7 +26,7 @@ public class JavadocProcessForTesting extends JavadocProcess {
      */
     protected static String buildTestDocletPath() {
         try {
-            return  JavadocMain.buildDocletPath() ;
+            return  SimpleJavadocProcess.buildMavenDocletPath() ;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

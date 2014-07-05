@@ -32,6 +32,9 @@ public class MongoDBService {
     }
     
     /**
+     * 
+     * @deprecated use MONGOLAB_URI instead
+     * 
      * @return the mongo db name (pulled from the config)
      */
     public static String getDbName() {
@@ -41,7 +44,9 @@ public class MongoDBService {
     /**
      * Set the given db name into the system property.
      */
-    public static void setDbName(String dbName) {
-        System.setProperty("com.surfapi.mongo.db.name", dbName);
+    public static void setMongoUri(String mongoUri) {
+        System.setProperty("MONGOLAB_URI", mongoUri);
     }
+    
+    
 }

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -223,4 +224,15 @@ public class Cawls {
         return (arr == null || arr.length == 0);
     }
 
+    /**
+     * @return the first non-empty string, or null if they're all empty
+     */
+    public static String firstNotEmpty(String... strs) {
+        for (String str : strs) {
+            if (!StringUtils.isEmpty(str)) {
+                return str;
+            }
+        }
+        return null;
+    }
 }

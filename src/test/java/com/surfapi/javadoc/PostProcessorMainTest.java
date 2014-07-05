@@ -7,6 +7,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +19,7 @@ import org.junit.Test;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
+import com.surfapi.db.MongoDBImpl;
 import com.surfapi.db.MongoDBService;
 import com.surfapi.db.post.AutoCompleteIndex;
 import com.surfapi.db.post.ReferenceNameQuery;
@@ -27,6 +30,12 @@ import com.surfapi.junit.MongoDBProcessRule;
 
 public class PostProcessorMainTest {
 
+    /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
+    
     /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
      * 
@@ -39,7 +48,7 @@ public class PostProcessorMainTest {
      * Drops the given db before/after each test.
      */
     @Rule
-    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName );
     
     /**
      * Capture and suppress stdout unless the test fails.
@@ -52,14 +61,23 @@ public class PostProcessorMainTest {
         
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        // Setup mongodb service
-        MongoDBService.setDbName( "test1" );
-        
         String libraryId = "/java/com.surfapi/1.0";
         
-        JavadocMain.main( new String[] { libraryId, "src/main/java/com/surfapi/coll", "src/test/java/com/surfapi/test" } );
+        new SimpleJavadocProcess()
+                .setMongoUri( MongoUri )
+                .setLibraryId( libraryId )
+                .setSourcePath( new File("src/test/java") )
+                .setPackages( Arrays.asList( "com.surfapi.test" ) )
+                .run();
 
-        DB db = MongoDBService.getDb();
+        new SimpleJavadocProcess()
+                .setMongoUri( MongoUri )
+                .setLibraryId( libraryId )
+                .setSourcePath( new File("src/main/java") )
+                .setPackages( Arrays.asList( "com.surfapi.coll" ) )
+                .run();
+
+        DB db = new MongoDBImpl(MongoDbName);
 
         List<Map> docs = db.find( libraryId, new MapBuilder() );
         
@@ -70,6 +88,7 @@ public class PostProcessorMainTest {
         assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "Cawls" ) ) );
         
         // Run the post-processor
+        MongoDBService.setMongoUri(MongoUri);
         PostProcessorMain.main( new String[] { libraryId } );
         
 
@@ -79,11 +98,6 @@ public class PostProcessorMainTest {
         assertEquals( 1, docs.size() );
         
         assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "_id", "/java/com.surfapi/1.0/com.surfapi.coll.Cawls") ) );
-        
-        // "test" classes should have been skipped.
-        docs = new ReferenceNameQuery().inject(db).query( "com.surfapi.test.DemoJavadoc" );
-        assertTrue( docs.isEmpty());
-
 
         // Verify auto-complete index ------------------------
         docs = new AutoCompleteIndex().inject(db).query( "java", "Cawl", 25 );
