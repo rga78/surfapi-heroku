@@ -1,7 +1,7 @@
 angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
         
 /**
- * Routing.
+ * 
  */
 .config( function($locationProvider, $routeProvider) {
     $locationProvider.html5Mode(true);
@@ -447,20 +447,6 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     var getQualifiedParameterSignature = function(model) {
         return "(" + _.chain(model.parameters).pluck("type").pluck("qualifiedTypeName").value().join(",") + ")";
     }
-
-    // -rx- var getReferenceName = function(model) {
-    // -rx-     switch( getMetaType(model) ) {
-    // -rx-         case "field":
-    // -rx-         case "enumConstant":
-    // -rx-         case "annotationTypeElement":
-    // -rx-             return getQualifiedName( getClassFor(model) ) + "+" + model.name;
-    // -rx-         case "method":
-    // -rx-         case "constructor":
-    // -rx-             return getQualifiedName( getClassFor(model) ) + "+" + model.name + getQualifiedParameterSignature(model);
-    // -rx-         default:
-    // -rx-             return getQualifiedName(model);
-    // -rx-     }
-    // -rx- }
 
     var getReferenceName = function(model) {
         switch( getMetaType(model) ) {

@@ -15,6 +15,6 @@ echo connecting to MONGOLAB_URI=$MONGOLAB_URI
 MAIN=$1
 shift
 
-echo "java -cp 'target/classes;target/dependency/*' -DMONGOLAB_URI=$MONGOLAB_URI com.surfapi.web.$MAIN $*"
-start mintty -p 30,30 -e java -cp 'target/classes;target/dependency/*' -DMONGOLAB_URI=$MONGOLAB_URI com.surfapi.web.$MAIN $*
+echo "java -cp 'target/classes;target/dependency/*' com.surfapi.web.$MAIN $*"
+start mintty -p 30,30 -e java -cp 'target/classes;target/dependency/*' com.surfapi.web.$MAIN $*
 

@@ -3,8 +3,6 @@
 # Initialize the db with some data for testing
 #
 
-MONGO_DBNAME=test
-
 # reset the db
 echo "Resetting the db....."
 ./runJavadoc.sh ResetMongoMain --db
@@ -21,7 +19,9 @@ for x in `find target/dependency`; do dp="$dp;$x"; done
 
 ./sajavadoc.sh /java/mongo-java-driver/2.9.3 -sourcepath /fox/tmp/surfapi-heroku/mongo-java-driver-2.9.3 -subpackages com -subpackages org
 ./sajavadoc.sh /java/javax.json/1.0.2 -sourcepath /fox/tmp/surfapi-heroku/javax.json-1.0.2 -subpackages javax
-./sajavadoc.sh /java/javaee/6.0 -sourcepath /fox/tmp/surfapi-heroku/javaee-api-6.0 -subpackages javax
 ./sajavadoc.sh /java/javax.enterprise.concurrent/1.0 -sourcepath /fox/tmp/surfapi-heroku/javax.enterprise.concurrent-1.0 -subpackages javax
 ./sajavadoc.sh /java/javax.batch/1.0 -sourcepath /fox/tmp/surfapi-heroku/javax.batch-api-1.0 -subpackages javax
 ./sajavadoc.sh /java/jaxrs/2.3.1 -sourcepath /fox/tmp/surfapi-heroku/jaxrs-api-2.3.1 -subpackages javax
+
+# TODO: not all source files have javadoc
+./sajavadoc.sh /java/javaee/6.0 -sourcepath /fox/tmp/surfapi-heroku/javaee-api-6.0 -subpackages javax

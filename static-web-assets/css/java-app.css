@@ -90,7 +90,11 @@ td {
 }
 
 .footer {
-    font-size: 18px;
+    font-size: small;
+    text-align: right;
+}
+
+.footer a {
     color: #999;
 }
 
