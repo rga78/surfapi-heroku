@@ -9,7 +9,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
 
 
 /**
- *
+ * TODO: change this to a  "/q/*" rest target
  */
 .service("AutoCompleteService", function($http) {
 
@@ -328,7 +328,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
                              return arg.trim().split(" ")[0];
                          }).join(",")
                 + ")";
-        console.log("formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
+        // -rx- console.log("formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
 
         return retMe;
     }
@@ -726,7 +726,10 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
 /**
  * For use with the auto-complete box.
  */
-.controller( "SearchController", function($scope, AutoCompleteService, Utils) {
+.controller( "SearchController", function($scope, 
+                                          AutoCompleteService, 
+                                          Utils, 
+                                          JavadocModelUtils) {
     
     var callAutoCompleteService = function(str) {
         AutoCompleteService.get( str )
@@ -747,10 +750,11 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
             callAutoCompleteService($scope.str);
         }
     };
- 
+
     // Export to scope.
     $scope.clearListing = clearListing;
     $scope.autoCompleteKeypress = autoCompleteKeypress;
+    $scope.getReferenceName = JavadocModelUtils.getReferenceName;
    
 })
 
@@ -837,6 +841,104 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
         document.body.scrollTop = document.documentElement.scrollTop = 0;
     }
 
+})
+
+
+/**
+ *
+ */
+.controller( "AllKnownSubclassesController", function($scope, 
+                                                      $rootScope,
+                                                      DbService,
+                                                      JavadocModelUtils,
+                                                      Utils,
+                                                      _) {
+
+    console.log("AllKnownSubclassesController: invoked");
+
+    // initialize scope data
+    $scope.allKnownSubclasses = [];
+    $scope.isEmpty = Utils.isEmpty;
+
+    var buildUrl = function(model) {
+        return "/q/java/allKnownSubclasses/" + JavadocModelUtils.getQualifiedName( model );
+    };
+
+    /**
+     * @param model - the superclass model.  if it's null, $scope.javadocModel is used (inherited).
+     */
+    var fetchSubclasses = function(model) { 
+
+        $scope.allKnownSubclasses = [];
+        console.log("AllKnownSubclassesController.fetchSubclasses: " + ((model) ? model._id : ""));
+
+        DbService.getQuietly( buildUrl(model || $scope.javadocModel) )
+                 .success( function(data) {
+                     // Note: the models are modified in place.
+                     _.map( data, function(model) { model._id = null; return model; } );
+                     $scope.allKnownSubclasses = data;  
+                     $scope.none = (data.length == 0);
+                 }) ;
+    };
+
+    /**
+     * Listen for changes to the javadoc model on display.
+     * Upon change, update the AllKnownSubclasses view
+     */
+    $rootScope.$on( "$saJavadocModelChange", function(event, model) {
+        fetchSubclasses(model);  
+    });
+
+    fetchSubclasses();
+})
+
+/**
+ *
+ */
+.controller( "AllKnownImplementorsController", function($scope, 
+                                                        $rootScope,
+                                                        DbService,
+                                                        // -rx- Utils,
+                                                        JavadocModelUtils,
+                                                        _) {
+
+    console.log("AllKnownImplementorsController: invoked");
+
+    // initialize scope data
+    $scope.allKnownImplementors = []
+    // -rx- $scope.isEmpty = Utils.isEmpty;
+
+    var buildUrl = function(model) {
+        return "/q/java/allKnownImplementors/" + JavadocModelUtils.getQualifiedName( model );
+    };
+
+    /**
+     *
+     */
+    var fetchImpls = function(model) {
+
+        $scope.allKnownImplementors = []
+
+        DbService.getQuietly( buildUrl(model || $scope.javadocModel) )
+                 .success( function(data) {
+                     // Note: the models are modified in place
+                     _.map( data, function(model) { model._id = null; return model; } );
+                     $scope.allKnownImplementors = data;
+                     $scope.none = (data.length == 0);
+                 }) ;
+    };
+
+
+    /**
+     * Listen for changes to the javadoc model on display.
+     * Upon change, update the AllKnownSubclasses view
+     */
+    $rootScope.$on( "$saJavadocModelChange", function(event, model) {
+        fetchImpls(model);  
+    });
+
+
+    fetchImpls();
 })
 
 /**

@@ -89,9 +89,18 @@ td {
     text-align: center;
 }
 
+.empty-list {
+    display: none;
+}
+
+.empty-list:only-child {
+    display: block;
+}
+
 .footer {
     font-size: small;
     text-align: right;
+    color: #999;
 }
 
 .footer a {

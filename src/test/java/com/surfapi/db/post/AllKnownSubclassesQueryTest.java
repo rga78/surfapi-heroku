@@ -1,0 +1,129 @@
+
+package com.surfapi.db.post;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import com.surfapi.app.JavadocMapUtils;
+import com.surfapi.db.DB;
+import com.surfapi.db.MongoDBImpl;
+import com.surfapi.javadoc.SimpleJavadocProcess;
+import com.surfapi.junit.CaptureSystemOutRule;
+import com.surfapi.junit.MongoDBProcessRule;
+
+/**
+ * 
+ */
+public class AllKnownSubclassesQueryTest {
+    
+    /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
+
+    /**
+     * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
+     * 
+     * Ensures a mongodb process is started.
+     */
+    @ClassRule
+    public static MongoDBProcessRule mongoDBProcessRule = new MongoDBProcessRule(MongoDbName);
+    
+    /**
+     * Capture and suppress stdout unless the test fails.
+     */
+    @Rule
+    public CaptureSystemOutRule systemOutRule  = new CaptureSystemOutRule( );
+
+    /**
+     * 
+     */
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        // Setup the db.
+        String libraryId = "/java/com.surfapi/1.0";
+        
+        File baseDir = new File("src/test/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.test" ) )
+               .run();
+        
+        // add another version of the library
+        new SimpleJavadocProcess()
+                .setMongoUri( MongoUri )
+                .setLibraryId( "/java/com.surfapi/0.9" )
+                .setSourcePath( baseDir )
+                .setPackages( Arrays.asList( "com.surfapi.test" ) )
+                .run();
+        
+        // Build the all known subclasses index
+        new AllKnownSubclassesQuery().inject(new MongoDBImpl(MongoDbName)).buildIndex();
+    }
+    
+    /**
+     * 
+     */
+    @Before
+    public void before() {
+        assumeTrue(mongoDBProcessRule.isStarted());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGetSubclasses() throws Exception {
+
+        DB db = new MongoDBImpl(MongoDbName) ;
+
+        List<Map> subclasses = new AllKnownSubclassesQuery().inject(db).query("com.surfapi.test.DemoJavadoc");
+
+        assertEquals(1, subclasses.size());
+        assertEquals( "com.surfapi.test.DemoJavadocSubClass", JavadocMapUtils.getQualifiedName(subclasses.get(0)) );
+       
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("com.surfapi.test.DemoJavadocSubClass");
+
+        assertEquals(1, subclasses.size());
+        assertEquals( "com.surfapi.test.DemoJavadocSubClass2", JavadocMapUtils.getQualifiedName(subclasses.get(0)) );
+       
+        // Verify it returns nothing when it should return nothing
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("com.surfapi.test.DemoJavadocSubClass2");
+        assertTrue( subclasses.isEmpty() );
+     
+        // make sure it worked for interfaces too
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("com.surfapi.test.DemoInterface");
+        assertEquals(1, subclasses.size());
+        assertEquals( "com.surfapi.test.DemoInterfaceSubIntf", JavadocMapUtils.getQualifiedName(subclasses.get(0)) );
+      
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("com.surfapi.test.DemoInterface2");
+        assertEquals(1, subclasses.size());
+        assertEquals( "com.surfapi.test.DemoInterfaceSubIntf", JavadocMapUtils.getQualifiedName(subclasses.get(0)) );
+
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("com.surfapi.test.DemoInterfaceSubIntf");
+        assertTrue( subclasses.isEmpty() );
+        
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("java.lang.Object");
+        assertTrue( subclasses.isEmpty() );
+    }
+
+
+}
+
+

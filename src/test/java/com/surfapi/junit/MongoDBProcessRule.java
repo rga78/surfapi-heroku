@@ -3,10 +3,13 @@ package com.surfapi.junit;
 
 import java.io.IOException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import com.surfapi.db.MongoDBImpl;
+import com.surfapi.log.Log;
 import com.surfapi.mongodb.MongoDBProcess;
 
 /**
@@ -19,6 +22,24 @@ public class MongoDBProcessRule implements TestRule {
      * A reference to the actual MongoDBProcess.
      */
     private MongoDBProcess mongodbProcess;
+    
+    /**
+     * If specified, the given DB will be dropped before and after.
+     */
+    private String dbNameToDrop;
+    
+    /**
+     * CTOR, no dbNameToDrop.
+     */
+    public MongoDBProcessRule() {}
+    
+    /**
+     * CTOR
+     * @param dbNameToDrop
+     */
+    public MongoDBProcessRule(String dbNameToDrop) {
+        this.dbNameToDrop = dbNameToDrop;
+    }
 
     /**
      * @return true if the mongodb process is running.
@@ -91,6 +112,7 @@ public class MongoDBProcessRule implements TestRule {
         protected void before() throws IOException {
             if ( Boolean.getBoolean("runMongo") ) {
                 mongodbProcess = MongoDBProcess.start();
+                dropDb();
             }
         }
 
@@ -100,8 +122,19 @@ public class MongoDBProcessRule implements TestRule {
          */
         protected void after() throws IOException {
             if ( mongodbProcess != null ) {
+                dropDb();
                 mongodbProcess.stop();
                 mongodbProcess = null;
+            }
+        }
+        
+        /**
+         * 
+         */
+        protected void dropDb() {
+            if (!StringUtils.isEmpty(dbNameToDrop)) {
+                Log.trace(this, "dropDb: " + dbNameToDrop);
+                new MongoDBImpl(dbNameToDrop).drop();
             }
         }
     }

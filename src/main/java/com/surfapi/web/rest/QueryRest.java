@@ -14,6 +14,8 @@ import org.json.simple.JSONValue;
 import com.surfapi.coll.ListBuilder;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DBService;
+import com.surfapi.db.post.AllKnownImplementorsQuery;
+import com.surfapi.db.post.AllKnownSubclassesQuery;
 import com.surfapi.db.post.ReferenceNameQuery;
 
 /**
@@ -31,8 +33,11 @@ public class QueryRest {
     public String getLangQueries( @PathParam("lang") String lang) {
 
         List<Map> queryList = new ListBuilder<Map>().append( new MapBuilder().append("lang", "java")
-                                                                             .append("uri", "/q/java/qn/{referenceName}") );
-
+                                                                             .append("uri", "/q/java/qn/{referenceName}") )
+                                                    .append( new MapBuilder().append("lang", "java")
+                                                                             .append("uri", "/q/java/allKnownSubclasses/{superclassName}") )
+                                                    .append( new MapBuilder().append("lang", "java")
+                                                                             .append("uri", "/q/java/allKnownImplementors/{interfaceName}") );
         return JSONValue.toJSONString( queryList );
     }
     
@@ -49,5 +54,33 @@ public class QueryRest {
         return JSONValue.toJSONString( results );
     }
    
+    /**
+     * @return the results of the 
+     */
+    @GET
+    @Path("/java/allKnownSubclasses/{superclassName}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String javaAllKnownSubclasses( @PathParam("superclassName") String superclassName ) {
+
+        List<Map> results = new AllKnownSubclassesQuery().inject( DBService.getDb() ).query( superclassName );
+
+        return JSONValue.toJSONString( results );
+    }
+    
+    
+    /**
+     * @return the results of the java quickName query
+     */
+    @GET
+    @Path("/java/allKnownImplementors/{interfaceName}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String javaAllKnownImplementors( @PathParam("interfaceName") String interfaceName ) {
+
+        List<Map> results = new AllKnownImplementorsQuery().inject( DBService.getDb() ).query( interfaceName );
+
+        return JSONValue.toJSONString( results );
+    }
+    
+
 
 }

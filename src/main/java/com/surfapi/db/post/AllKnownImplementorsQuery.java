@@ -1,7 +1,6 @@
 package com.surfapi.db.post;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -14,55 +13,51 @@ import com.surfapi.db.DB;
 import com.surfapi.log.Log;
 
 /**
- * Note: subclasses are registered only for their IMMEDIATE superclass (not
- *       parents of the superclass).
+ * Populate the "allKnownImplementors" index from interface-name to the classes that implement them.
+ *
  */
-public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery> {
-    
-    
-    private static final String CollectionName = "/q/java/allKnownSubclasses";
+public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQuery> {
+
+    private static final String CollectionName = "/q/java/allKnownImplementors";
     
     protected String getCollectionName() {
         return CollectionName;
     }
     
     /**
-     * Query for the subclasses of the given class name.
+     * Query for the impmlementors of the given interface name.
      * 
-     * @param superclassName
+     * @param interfaceName
      *
      * @return the results.
      */
-    public List<Map> query(String superclassName) {
+    public List<Map> query(String interfaceName) {
         return getDb().find( getCollectionName(), 
-                             new MapBuilder().append( "_superclass", superclassName ) );
+                             new MapBuilder().append( "_interface", interfaceName ) );
     }
-    
+
     /**
      * Build the index from scratch.
      * 
      * NOTE: This will fully delete the existing index.
      */
-    public AllKnownSubclassesQuery buildIndex() {
+    public AllKnownImplementorsQuery buildIndex() {
 
-        Log.info( this, "build: building the allKnownSubclasses index" );
+        Log.info( this, "build: building the allKnownImplementors index" );
         
         getDb().drop( getCollectionName() );
         
         getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder() );
         
-        // -rx- getDb().forAll( (Collection<String>) Cawls.pluck( LibraryUtils.latestVersionsOnly( db.getLibraryList("java") ), "_id" ), 
-        //                 new IndexBuilder() );
-        
         ensureIndex();
         
         return this;
     }
-    
+
     /**
      * Add the documents from the given libraries to the index.
      */
-    public AllKnownSubclassesQuery addLibrariesToIndex( List<String> libraryIds ) {
+    public AllKnownImplementorsQuery addLibrariesToIndex( List<String> libraryIds ) {
 
         Log.info( this, "addLibrariesToIndex: " + libraryIds);
         
@@ -73,11 +68,12 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
         return this;
     }
     
+    
     /**
      * Ensure the proper columns are indexed.
      */
     protected void ensureIndex() {
-        getDb().createIndex( getCollectionName(), new MapBuilder().append( "_superclass", 1 )
+        getDb().createIndex( getCollectionName(), new MapBuilder().append( "_interface", 1 )
                                                                   .append( "qualifiedName", 1 ) );
     }
     
@@ -97,14 +93,20 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
        }
 
        /**
-        * @return the "interfaces" field if it's an interface; otherwise the "superclass" field.
+        * Note: this method and buildDocument() below are the only two methods
+        *       that are different between this class and AllKnownSubclassesQuery.
+        *       There's a pattern here that can be factored out - but it's not
+        *       worth doing that now.  The boilerplate code isn't all that much
+        *       to begin with.
+        *
+        * @return the "interfaces" field if it's a class; otherwise nothing.
         */
-       protected List<Map> getSuperclasses(Map javadocModel) {
+       protected List<Map> getInterfaces(Map javadocModel) {
            if ( JavadocMapUtils.isInterface(javadocModel) ) {
-               return (List<Map>) javadocModel.get("interfaces") ;
+               return Collections.EMPTY_LIST; 
            } else {
-               Map superclass = (Map) javadocModel.get("superclass");
-               return (superclass != null) ? Arrays.asList(superclass) : Collections.EMPTY_LIST;
+               // return (List<Map>) javadocModel.get("interfaces");
+               return (List<Map>) javadocModel.get("allInterfaceTypes");
            }
        }
 
@@ -114,32 +116,33 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
        protected List<Map> buildDocuments(Map javadocModel) {
            List<Map> retMe = new ArrayList<Map>();
 
-           for (Map superclass : getSuperclasses(javadocModel)) {
-               // Don't add all the subclasses of java.lang.Object - there's just too many..
-               if ( !JavadocMapUtils.getQualifiedName(superclass).equals("java.lang.Object")) {
-                   retMe.add( buildDocument( javadocModel, superclass ) );
-               }
+           for (Map intf : getInterfaces(javadocModel)) {
+               retMe.add( buildDocument( javadocModel, intf) );
            }
 
            return retMe;
        }
 
        /**
+        * The given javadocModel is an implementor of the given interface.  Create
+        * an index item that maps interface -> implementor.
+        *
         * @return a subset of fields from the javadocModel, along with a few fields
         *         needed by the index.
         */
-       protected Map buildDocument(Map javadocModel, Map superclass) {
+       protected Map buildDocument(Map javadocModel, Map intf) {
            Map retMe = JavadocMapUtils.buildTypeStub(javadocModel);
 
            // The _id field is constructed without library version such that only 1 version of the entry exists
-           retMe.put( "_id", JavadocMapUtils.getQualifiedName(superclass) 
+           retMe.put( "_id", JavadocMapUtils.getQualifiedName(intf) 
                              + JavadocMapUtils.getIdSansVersion( javadocModel ) );
            
-           retMe.put( "_superclass", JavadocMapUtils.getQualifiedName(superclass) );
+           retMe.put( "_interface", JavadocMapUtils.getQualifiedName(intf) );
            retMe.put( JavadocMapUtils.LibraryFieldName, javadocModel.get( JavadocMapUtils.LibraryFieldName) );
 
            return retMe;
        }
     }
+    
 
 }

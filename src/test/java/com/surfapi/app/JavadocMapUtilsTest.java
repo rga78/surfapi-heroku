@@ -209,4 +209,19 @@ public class JavadocMapUtilsTest {
         assertEquals( "com.surfapi.test", JavadocMapUtils.getQualifiedName(doc4)) ;
         assertNull( JavadocMapUtils.getQualifiedName(null)) ;
     }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testGetIdSansVersion() {
+        
+        String libraryId = "/java/com.surfapi.test/1.0";
+        
+        Map javadocModel = new MapBuilder().append("qualifiedName", "com.surfapi.test.DemoJavadoc")
+                                           .append("metaType", "class")
+                                           .append( JavadocMapUtils.LibraryFieldName, JavadocMapUtils.mapLibraryId(libraryId));
+        
+        assertEquals("/java/com.surfapi.test/com.surfapi.test.DemoJavadoc", JavadocMapUtils.getIdSansVersion( javadocModel ) );
+    }
 }

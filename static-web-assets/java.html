@@ -120,6 +120,38 @@
                             </ul>
                         </div>
                 
+                        <!-- All known subclasses -->
+                        <div ng-controller="AllKnownSubclassesController">
+                                <h4>All Known Subclasses</h4>
+                                <ul>
+                                    <li ng-if="none">
+                                        None
+                                    </li>
+                                    <li class="comma-separated-list">
+                                        <span class="list-item code" ng-repeat="scDoc in allKnownSubclasses">
+                                            <sa-type doc="scDoc"></sa-type
+                                        ></span>
+                                    </li>
+                                </ul>
+                        </div>
+
+                        <!-- All known implementors -->
+                        <div ng-controller="AllKnownImplementorsController">
+                                <h4>All Known Implementors</h4>
+                                <ul>
+                                    <li ng-if="none">
+                                        None
+                                    </li>
+                                    <li class="comma-separated-list">
+                                        <span class="list-item code" ng-repeat="implDoc in allKnownImplementors">
+                                            <sa-type doc="implDoc"></sa-type
+                                        ></span>
+                                    </li>
+                                </ul>
+                        </div>
+
+
+
                         <hr />
                 
                         <!-- Main description -->
@@ -401,7 +433,7 @@
     <!-- Footer -->
     <div class="vertical-spacer navbar navbar-inverse">
         <div class="container footer padding-lite">
-            <a href="mailto:info@surfapi.com">info@surfapi.com</a>
+            a work in progress... <a href="mailto:info@surfapi.com">info@surfapi.com</a>
         </div>
     </div>
     

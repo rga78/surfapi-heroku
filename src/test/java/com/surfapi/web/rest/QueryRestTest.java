@@ -4,6 +4,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
+import java.util.Arrays;
 
 import javax.ws.rs.core.Application;
 
@@ -11,22 +12,32 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import com.surfapi.db.DBLoader;
 import com.surfapi.db.DBService;
 import com.surfapi.db.MongoDBImpl;
+import com.surfapi.db.post.AllKnownImplementorsQuery;
+import com.surfapi.db.post.AllKnownSubclassesQuery;
 import com.surfapi.db.post.ReferenceNameQuery;
+import com.surfapi.javadoc.SimpleJavadocProcess;
 import com.surfapi.junit.CaptureSystemOutRule;
 import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
+import com.surfapi.log.Log;
 
 /**
  * Query REST target.
  */
 public class QueryRestTest extends JerseyTest {
+    
+    /**
+     * For connecting to the mongodb service
+     */
+    public static final String MongoDbName = "test1";
+    public static final String MongoUri = "mongodb://localhost/" + MongoDbName;
     
     /**
      * Executed before and after the entire collection of tests (like @BeforeClass/@AfterClass).
@@ -39,8 +50,8 @@ public class QueryRestTest extends JerseyTest {
     /**
      * Drops the given db before/after each test.
      */
-    @Rule
-    public DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, "test1" );
+    @ClassRule
+    public static DropMongoDBRule dropMongoDBRule = new DropMongoDBRule( mongoDBProcessRule, MongoDbName );
     
     /**
      * Capture and suppress stdout unless the test fails.
@@ -56,6 +67,29 @@ public class QueryRestTest extends JerseyTest {
         return new ResourceConfig(QueryRest.class);
     }
     
+    /**
+     * 
+     */
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        // Setup the db.
+        String libraryId = "/java/com.surfapi/1.0";
+        
+        File baseDir = new File("src/test/java");
+        
+        SimpleJavadocProcess javadocProcess = new SimpleJavadocProcess()
+                                                    .setMongoUri( MongoUri )
+                                                    .setLibraryId( libraryId )
+                                                    .setSourcePath( baseDir )
+                                                    .setPackages( Arrays.asList( "com.surfapi.test" ) );
+        javadocProcess.run();
+        
+        // Build the backend indexes
+        new ReferenceNameQuery().inject(new MongoDBImpl(MongoDbName)).buildIndex();
+        new AllKnownSubclassesQuery().inject(new MongoDBImpl(MongoDbName)).buildIndex();
+        new AllKnownImplementorsQuery().inject(new MongoDBImpl(MongoDbName)).buildIndex();
+    }
+    
  
     /**
      * 
@@ -64,13 +98,50 @@ public class QueryRestTest extends JerseyTest {
     public void testQueryReferenceName() throws Exception {
         assumeTrue( mongoDBProcessRule.isStarted() );
         
-        DBService.setDb( new MongoDBImpl("test1" ) );
-        new DBLoader().inject( DBService.getDb() ).loadFile(new File("src/test/resources/com.surfapi_1.0.json") );
-        new ReferenceNameQuery().inject(DBService.getDb()).buildIndex();
+        // Need to set this because the rest handler uses DBService.getDb()
+        DBService.setDb( new MongoDBImpl( MongoDbName ) );
         
         String responseMsg = target().path("q/java/qn/com.surfapi.test.DemoJavadoc+parse").request().get(String.class);
         
-        // Log.trace(this, "testQueryIndex: responseMsg: " + responseMsg);
+        Log.trace(this, "testQueryReferenceName: responseMsg: " + responseMsg);
+
+        // Verify the json response is parseable.
+        JSONArray jsonArr = (JSONArray) new JSONParser().parse( responseMsg );
+        assertFalse( jsonArr.isEmpty() );
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testAllKnownSubclasses() throws Exception {
+        assumeTrue( mongoDBProcessRule.isStarted() );
+        
+        // Need to set this because the rest handler uses DBService.getDb()
+        DBService.setDb( new MongoDBImpl( MongoDbName ) );
+        
+        String responseMsg = target().path("q/java/allKnownSubclasses/com.surfapi.test.DemoJavadoc").request().get(String.class);
+        
+        Log.trace(this, "testAllKnownSubclasses: responseMsg: " + responseMsg);
+
+        // Verify the json response is parseable.
+        JSONArray jsonArr = (JSONArray) new JSONParser().parse( responseMsg );
+        assertFalse( jsonArr.isEmpty() );
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testAllKnownImplementors() throws Exception {
+        assumeTrue( mongoDBProcessRule.isStarted() );
+        
+        // Need to set this because the rest handler uses DBService.getDb()
+        DBService.setDb( new MongoDBImpl( MongoDbName ) );
+        
+        String responseMsg = target().path("q/java/allKnownImplementors/com.surfapi.test.DemoInterface").request().get(String.class);
+        
+        Log.trace(this, "testAllKnownImplementors: responseMsg: " + responseMsg);
 
         // Verify the json response is parseable.
         JSONArray jsonArr = (JSONArray) new JSONParser().parse( responseMsg );

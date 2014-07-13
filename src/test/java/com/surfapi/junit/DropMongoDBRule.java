@@ -92,7 +92,9 @@ public class DropMongoDBRule implements TestRule {
          * Reset the mongoDB db before the test.
          */
         protected void before() throws IOException {
+            // Log.trace(this, "before");
             if ( mongoDBProcessRule.isStarted() ) {
+                // Log.trace(this, "before: dropping db: " + dbName);
                 new MongoDBImpl(dbName).drop();
             }
         }
@@ -102,6 +104,7 @@ public class DropMongoDBRule implements TestRule {
          */
         protected void after() throws IOException {
             if ( mongoDBProcessRule.isStarted() ) {
+                // Log.trace(this, "after: dropping db: " + dbName);
                 new MongoDBImpl(dbName).drop();
             }
         }

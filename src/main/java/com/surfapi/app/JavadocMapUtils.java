@@ -270,5 +270,13 @@ public class JavadocMapUtils {
                                            "wildcardType") ); 
     }
 
+    /**
+     * @return an id that doesn't include the library versions
+     */
+    public static String getIdSansVersion(Map javadocModel) {
+        Map library = (Map) javadocModel.get(JavadocMapUtils.LibraryFieldName);
+        return "/" + library.get("lang") + "/" + library.get("name") + "/" + getRelativeId(javadocModel);
+    }
+
 
 }

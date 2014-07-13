@@ -1,13 +1,9 @@
 package com.surfapi.javadoc;
 
-import java.util.Arrays;
-
-import com.surfapi.db.DB;
-import com.surfapi.db.MongoDBService;
-import com.surfapi.db.post.AutoCompleteIndex;
-import com.surfapi.db.post.JavadocPostProcessor;
-import com.surfapi.db.post.ReferenceNameQuery;
 import com.surfapi.log.Log;
+import com.surfapi.main.MainTaskDispatcher;
+import com.surfapi.main.tasks.BuildIndexTask;
+import com.surfapi.main.tasks.HelpTask;
 
 /**
  * Main entry point for building indexes and doing other "post-insertion" operations
@@ -18,6 +14,8 @@ import com.surfapi.log.Log;
 public class PostProcessorMain {
 
     /**
+     * TODO:
+     * usage: PostProcessorMain --buildIndex=all | --buildIndex=[indexName]
      * 
      * Build indexes and run "post-insertion" processes against the javadoc.
      *
@@ -25,27 +23,16 @@ public class PostProcessorMain {
      */
     public static void main(String[] args) throws Exception{
 
-        DB db = MongoDBService.getDb();
-
         Log.info(new PostProcessorMain(), "main: entry");
-
-        if (args.length == 0) {
         
-            new AutoCompleteIndex().inject(db).buildIndexForLang( "java" );
+        MainTaskDispatcher dispatcher = new MainTaskDispatcher();
         
-            new ReferenceNameQuery().inject(db).buildIndex();
-
-            new JavadocPostProcessor().inject(db).postProcess();
-
-        } else {
-
-            new AutoCompleteIndex().inject(db).addLibrariesToIndex( Arrays.asList(args) );
-        
-            new ReferenceNameQuery().inject(db).addLibrariesToIndex( Arrays.asList( args) );
-
-            new JavadocPostProcessor().inject(db).postProcess(Arrays.asList( args ));
-        }
-
-        Log.info(new PostProcessorMain(), "main: exit");
+        // Register task handlers
+        dispatcher.registerTask(new BuildIndexTask());
+        dispatcher.registerTask(new HelpTask(dispatcher.getTaskList()));
+               
+        // Process the command
+        System.exit( dispatcher.runProgram(args) );
     }
+
 }

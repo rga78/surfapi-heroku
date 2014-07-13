@@ -3,17 +3,13 @@ package com.surfapi.db.post;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.app.JavadocObject;
-import com.surfapi.app.LibraryUtils;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
@@ -28,39 +24,38 @@ import com.surfapi.log.Log;
  * ending point: auto-complete indexes - 1 per collection, 1 per language
  *
  */
-public class AutoCompleteIndex {
+public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
 
     /**
-     * Injected REF to DB.
+     * 
      */
-    private DB db;
-
-    /**
-     * inject DB.
-     */
-    public AutoCompleteIndex inject(DB db) {
-        this.db = db;
-        return this;
+    @Override
+    public AutoCompleteIndex buildIndex() {
+        return buildIndexForLang("java");
     }
 
     /**
      * Build the auto-complete index for the given lang.
      */
-    public void buildIndexForLang( final String lang ) {
+    public AutoCompleteIndex buildIndexForLang( final String lang ) {
         
         String indexName = buildAutoCompleteIndexNameForLang( lang ) ;
 
-        db.drop( indexName );
+        getDb().drop( indexName );
         
         Log.info(this, "buildIndexForLang: building index for language " + lang);
         
-        // Build the index against the *latest versions only* of each library.
-        db.forAll( (Collection<String>) Cawls.pluck( LibraryUtils.latestVersionsOnly( db.getLibraryList(lang) ), "_id" ), 
-                   new IndexBuilder( indexName ) );
-
-        db.createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
+        getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder(indexName) );
         
-        buildIndexesForLibraries( db.getLibraryIds(lang) );
+        // -rx- Build the index against the *latest versions only* of each library.
+        // -rx- db.forAll( (Collection<String>) Cawls.pluck( LibraryUtils.latestVersionsOnly( db.getLibraryList(lang) ), "_id" ), 
+        // -rx-            new IndexBuilder( indexName ) );
+
+        getDb().createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
+        
+        buildIndexesForLibraries( getDb().getLibraryIds(lang) );
+        
+        return this;
     }
     
     /**
@@ -78,22 +73,13 @@ public class AutoCompleteIndex {
     protected void buildIndexForLibrary( String libraryId ) {
 
         String indexName = buildAutoCompleteIndexName( libraryId );
-        db.drop( indexName  );
+        getDb().drop( indexName  );
         
         Log.info(this, "buildIndex: building index for library " + libraryId);
 
-        db.forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
-
-        db.createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
-    }
-    
-    /**
-     * Add the given libraries to the auto-complete index.
-     */
-    public void addLibrariesToIndex(List<String> libraryIds) {
-        for (String libraryId : libraryIds) {
-            addLibraryToIndex(libraryId);
-        }
+        getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
+        
+        getDb().createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
     }
 
     /**
@@ -104,60 +90,28 @@ public class AutoCompleteIndex {
      * 
      * An index for the library itself is also built.
      */
-    public void addLibraryToIndex(String libraryId) {
+    public AutoCompleteIndex addLibraryToIndex(String libraryId) {
 
         Map library =  JavadocMapUtils.mapLibraryId(libraryId);
         
         String indexName = buildAutoCompleteIndexNameForLang( (String) library.get("lang") ) ;
         
-        if (shouldAddLibraryToIndex( library ) ) {
+        // -rx- if (shouldAddLibraryToIndex( library ) ) {
             
             Log.info(this, "addLibraryToIndex: adding library " + libraryId + ", " + library.get("name"));
             
-            // Remove all existing entries for this library.
-            db.remove( indexName, new MapBuilder<String, String>()
-                                        .append( JavadocMapUtils.LibraryFieldName + ".name", (String) library.get("name")) );
+            // -rx- // Remove all existing entries for this library.
+            // -rx- db.remove( indexName, new MapBuilder<String, String>()
+            // -rx-                             .append( JavadocMapUtils.LibraryFieldName + ".name", (String) library.get("name")) );
             
-            db.forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
-        }
+            getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
+        // -rx- }
         
         buildIndexForLibrary(libraryId);
         
+        return this;
+        
     }
-    
-    /**
-     * @return true if the given library should be added to the auto-complete index.
-     *         A library is added if it's the first of its kind or if its version
-     *         is newer (greater) than any other of its kind.
-     */
-    protected boolean shouldAddLibraryToIndex( Map library ) {
-        
-        // Note: the library we're adding is already in the library versions list.
-        // It was added by the DbLoader. So if the list only has one entry, then
-        // it must be for this library. Otherwise check if this library is newer
-        // than every other one in the list.
-        List<Map> libraryVersions = db.getLibraryVersions("java", (String) library.get("name") );
-        
-        if (libraryVersions.size() == 1) {
-            return true;
-        } else {
-            // Sort the libraries in reverse order (newest version first).
-            // If the library being added is at the head of the list, then
-            // it must be the newest.
-            Collections.sort( libraryVersions, new Comparator<Map>() {
-                public int compare(Map lib1, Map lib2) {
-                    return (-1) * LibraryUtils.libraryCompareVersion(lib1, lib2);
-                }
-            });
-            
-            if ( library.get("version").equals( libraryVersions.get(0).get("version") ) ) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
 
     /**
      * @return the auto-complete index collection name for the given collection
@@ -183,7 +137,7 @@ public class AutoCompleteIndex {
      * @return the results.
      */
     public List<Map> query(String indexName, String text, int limitResults) {
-        return db.find( buildAutoCompleteIndexName( indexName ), 
+        return getDb().find( buildAutoCompleteIndexName( indexName ), 
                         new MapBuilder().append( "_searchName", new MapBuilder().append( "$regex", "^" + normalizeSearchName(text) + ".*") ), 
                         limitResults );
     }
@@ -230,8 +184,16 @@ public class AutoCompleteIndex {
         protected boolean isIndexable(Map obj) {
             return JavadocMapUtils.isClass(obj) || JavadocMapUtils.isPackage(obj);
         }
+        
+        /**
+         * @return an _id for the autoCompleteIndex collection
+         */
+        protected String buildId(String searchName, Map javadocModel) {
+            return "/" + searchName + JavadocMapUtils.getIdSansVersion(javadocModel);
+        }
 
         /**
+         *       
          * @return a document to use for the auto-complete index
          */
         public List<Map> buildIndexedDocuments( JavadocObject doc ) {
@@ -249,7 +211,8 @@ public class AutoCompleteIndex {
                 // also add entries for atomic, concurrent.atomic, util.concurrent.atomic.
                 for (String nameSegment : getQualifiedNameSegments( doc.getString("name") ) ) {
 
-                    retMe.add( new MapBuilder<String,Object>().append("_id", UUID.randomUUID().toString()) 
+                    retMe.add( new MapBuilder<String,Object>()
+                                               .append("_id", buildId( normalizeSearchName(nameSegment), doc.getJson()) ) // -rx- , UUID.randomUUID().toString()) 
                                                .append( "id", doc.getId() )     
                                                .append( "_searchName", normalizeSearchName(nameSegment) )
                                                .append( "name", doc.getString("name") )
@@ -263,7 +226,7 @@ public class AutoCompleteIndex {
 
                 // Why not use mongodb's auto-assigned ID? Cuz the auto-assigned _id field in mongoDb is an ObjectId object, 
                 // which isn't a valid JSON element so the JSON can't be parsed.
-                retMe.add( new MapBuilder<String,Object>().append("_id", UUID.randomUUID().toString())
+                retMe.add( new MapBuilder<String,Object>().append("_id", buildId( normalizeSearchName(doc.getString("name")), doc.getJson()) ) // -rx- .append("_id", UUID.randomUUID().toString())
                                                           .append( "id", doc.getId() )     
                                                           .append( "_searchName", normalizeSearchName(doc.getString("name")) )
                                                           .append( "name", doc.getString("name") )

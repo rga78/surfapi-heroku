@@ -30,26 +30,12 @@ import com.surfapi.log.Log;
  * This query helps resolve inter-document and inter-library links.
  *
  */
-public class ReferenceNameQuery {
+public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
 
     /**
      *
      */
     public static String CollectionName = "/q/java/qn";
-
-    /**
-     * The DB ref.
-     */
-    private DB db;
-
-    /**
-     * Inject the DB ref.
-     * @return this
-     */
-    public ReferenceNameQuery inject(DB db) {
-        this.db = db;
-        return this;
-    }
 
     /**
      * For each doc, replace the "_id" field with the "id" field.
@@ -75,7 +61,7 @@ public class ReferenceNameQuery {
     public List<Map> query(String referenceName) {
         
         return (!StringUtils.isEmpty(referenceName)) 
-                ? replaceIds( db.find( ReferenceNameQuery.CollectionName, new MapBuilder().append("_qn", referenceName) ) )
+                ? replaceIds( getDb().find( ReferenceNameQuery.CollectionName, new MapBuilder().append("_qn", referenceName) ) )
                 : new ArrayList<Map>();
     }
     
@@ -119,7 +105,7 @@ public class ReferenceNameQuery {
         Map superclassRef =  queryOne( JavadocMapUtils.getQualifiedName(superClassStub),
                                        JavadocMapUtils.getLibraryId( doc ) );
 
-        return db.read( JavadocMapUtils.getId(superclassRef) );
+        return getDb().read( JavadocMapUtils.getId(superclassRef) );
     }
     
     /**
@@ -131,9 +117,9 @@ public class ReferenceNameQuery {
 
         Log.info( this, "build: building the referenceName index" );
         
-        db.drop( ReferenceNameQuery.CollectionName );
+        getDb().drop( ReferenceNameQuery.CollectionName );
         
-        db.forAll( (Collection<String>) Cawls.pluck( db.getLibraryList("java"), "_id"), new IndexBuilder() );
+        getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder() );
         
         ensureIndexedColumns();
         
@@ -144,8 +130,8 @@ public class ReferenceNameQuery {
      * Create the index on the _qn field, if one doesn't already exist.
      */
     protected void ensureIndexedColumns() {
-        db.createIndex( ReferenceNameQuery.CollectionName , new MapBuilder().append( "_qn", 1 )
-                                                                            .append("_id", -1) );
+        getDb().createIndex( ReferenceNameQuery.CollectionName , new MapBuilder().append( "_qn", 1 )
+                                                                                 .append("_id", -1) );
     }
     
     /**
@@ -155,7 +141,7 @@ public class ReferenceNameQuery {
 
         Log.info( this, "addLibrariesToIndex: " + libraryIds);
         
-        db.forAll( libraryIds , new IndexBuilder() );
+        getDb().forAll( libraryIds , new IndexBuilder() );
 
         ensureIndexedColumns();
         
@@ -167,7 +153,7 @@ public class ReferenceNameQuery {
      */
     public ReferenceNameQuery addLibraryToIndex( String libraryId ) {
 
-        db.forAll( Arrays.asList(libraryId) , new IndexBuilder() );
+        getDb().forAll( Arrays.asList(libraryId) , new IndexBuilder() );
 
         ensureIndexedColumns();
         

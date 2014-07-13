@@ -22,6 +22,18 @@ public class Log {
     public static void error(Object obj, String msg) {
         error(obj.getClass().getName() + ": " + msg);
     }
+
+    public static void error(Object obj, String msg, Throwable e) {
+        error(obj, msg + ": " + etos(e));
+    }
+    
+    protected static String etos(Throwable e) {
+        StringWriter sw = new StringWriter();
+        if (e != null) {
+            e.printStackTrace( new PrintWriter(sw) );
+        }
+        return sw.toString();
+    }
     
     private static void log(String type, String msg) {
         System.out.println("[" + type + "] [" + new Date() + "] " + msg);
@@ -40,17 +52,12 @@ public class Log {
             trace(obj, String.valueOf(msg));
         }
     }
-
-    public static void error(Object obj, String msg, Throwable e) {
-        error(obj, msg + ": " + etos(e));
-    }
     
-    protected static String etos(Throwable e) {
-        StringWriter sw = new StringWriter();
-        if (e != null) {
-            e.printStackTrace( new PrintWriter(sw) );
+    public static void trace(Object obj, String prefixMsg, Collection<?> msgs) {
+        for (Object msg : msgs) {
+            trace(obj, prefixMsg + String.valueOf(msg));
         }
-        return sw.toString();
     }
+
 
 }

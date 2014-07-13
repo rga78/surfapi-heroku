@@ -45,6 +45,38 @@ public class LibraryUtilsTest {
      * 
      */
     @Test
+    public void testIsLatestVersion() {
+        
+        Map lib1 = JavadocMapUtils.mapLibraryId( "/java/com.surfapi/1.0" );
+        Map lib2 = JavadocMapUtils.mapLibraryId( "/java/com.surfapi/1.1" );
+        Map lib3 = JavadocMapUtils.mapLibraryId( "/java/com.surfapi/0.9" );
+        
+        List<Map> allLibs = Arrays.asList(lib1, lib2, lib3);
+        
+        assertFalse( LibraryUtils.isLatestVersion( lib1, allLibs ) );
+        assertTrue( LibraryUtils.isLatestVersion( lib2, allLibs ) );
+        assertFalse( LibraryUtils.isLatestVersion( lib3, allLibs ) );
+    } 
+    
+    /**
+     * 
+     */
+    @Test(expected=IllegalArgumentException.class)
+    public void testIsLatestVersionNotInList() {
+        
+        Map lib1 = JavadocMapUtils.mapLibraryId( "/java/com.surfapi/1.0" );
+        Map lib2 = JavadocMapUtils.mapLibraryId( "/java/com.surfapi/1.1" );
+        
+        List<Map> allLibs = Arrays.asList(lib1);
+        
+        LibraryUtils.isLatestVersion( lib2, allLibs );
+    } 
+
+    
+    /**
+     * 
+     */
+    @Test
     public void testLibraryCompareVersion() {
         
         Map lib1 = new MapBuilder().append("lang", "java")

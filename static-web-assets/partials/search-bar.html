@@ -11,11 +11,13 @@
     <div class="auto-complete-results">
         <ul class="ontop container">
             <li ng-repeat="item in autoCompleteData">
-                <a href="#{{item.id}}" ng-click="clearListing()">
+                <!-- a href="#{{item.id}}" ng-click="clearListing()" -->
+                <a href="#/q/java/qn/{{ getReferenceName( item ) }}" ng-click="clearListing()">
                     <div class="padding-xlite" >
                         <span class="h4">{{ item.name }}
                             <br/>
-                            <small>{{ item.qualifiedName }} - {{item._library.name}} {{item._library.version}}</small>
+                            <!-- small>{{ item.qualifiedName }} - {{item._library.name}} {{item._library.version}}</small -->
+                            <small>{{ item.qualifiedName }} - {{item._library.name}}</small>
                         </span>
                     </div>
                 </a>
