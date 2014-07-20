@@ -237,7 +237,7 @@
                                     <li ng-repeat="methodDoc in javadocModel.methods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
                                 </ul>
                                 <div ng-repeat="inheritedDoc in javadocModel.allInheritedMethods">         
-                                    <h4 class="vertical-spacer inherited-from-title">Inherited from <sa-type doc="inheritedDoc.superclassType"></sa-type></h4>
+                                    <h4 class="inherited-from-title">Inherited from <sa-type doc="inheritedDoc.superclassType"></sa-type></h4>
                                     <ul class="table-condensed table-striped model-list" >
                                         <li ng-repeat="methodDoc in inheritedDoc.inheritedMethods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
                                     </ul>
@@ -357,7 +357,7 @@
                         <br />
                         <span class="h1">{{javadocModel.name}} {{javadocModel.version}}</span>
                         
-                        <p class="vertical-spacer"></p>
+                        <div class="vertical-spacer">&nbsp;</div>
                     
                         <h3 class="tab-header"><span class="tab-label">Packages</span></h3>
                         <div class="tab-body">
@@ -379,13 +379,15 @@
                     <div ng-hide="requestPending" ng-if="isLibraryVersions(javadocModel)">
                         <h1>{{javadocModel.name}}</h1>  
                     
+                        <div class="vertical-spacer">&nbsp;</div>
+
                         <h3 class="tab-header"><span class="tab-label">Versions</span></h3>
                         <div class="tab-body">
-                        <ul class="vertical-spacer table-condensed model-list">
-                            <li ng-repeat="lib in javadocModel.versions | orderBy: 'version'">
-                                <a class="code" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
-                            </li>
-                        </ul>
+                            <ul class="table-condensed table-striped model-list">
+                                <li ng-repeat="lib in javadocModel.versions | orderBy: 'version'">
+                                    <a class="model-identifier" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
+                                </li>
+                            </ul>
                         </div>
                     
                     </div>
@@ -394,13 +396,15 @@
                     <div ng-hide="requestPending" ng-if="isLang(javadocModel)">
                         <h1 ng-bind="javadocModel.name"></h1>
                     
+                        <div class="vertical-spacer">&nbsp;</div>
+
                         <h3 class="tab-header"><span class="tab-label">Libraries</span></h3>
                         <div class="tab-body">
-                        <ul class="vertical-spacer table-condensed model-list">
-                            <li ng-repeat="lib in javadocModel.libraries | orderBy: 'name'">
-                                <a class="code" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
-                            </li>
-                        </ul>
+                            <ul class="table-condensed table-striped model-list">
+                                <li ng-repeat="lib in javadocModel.libraries | orderBy: 'name'">
+                                    <a class="model-identifier" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
+                                </li>
+                            </ul>
                         </div>
                     
                     </div>
