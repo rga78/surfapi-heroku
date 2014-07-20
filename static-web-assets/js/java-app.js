@@ -781,13 +781,40 @@ angular.module( "JavaApp", ['ngRoute',
 
     var _this = this;
     // _this.logging = { prefix: "SearchController" };
-    
-    var callAutoCompleteService = function(str) {
-        Log.log(_this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName);
+
+    /**
+     * Every time the search string changes, increment this counter (see onChange)
+     * and use it to match up with the search results so that only search results
+     * associated with the most recent 'onChange' event are shown.
+     */
+    _this.onChangeCounter = 0;
+
+    /**
+     * @param str the search string
+     * @param onChangeCount an 'onChange' event id. It's used for matching up the search results
+     *                      to the most recent 'onChange' event.  If _this.onChangeCounter has
+     *                      changed by the time we get the results, then the results are ignored
+     *                      (since a more recent 'onChange' event triggered a more recent search
+     *                      with more relevant results)
+     */
+    var callAutoCompleteService = function(str, onChangeCount) {
+
+        Log.log(_this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName
+                       + ", onChangeCount: " + onChangeCount + ", onChangeCounter: " + _this.onChangeCounter);
+
         AutoCompleteService.get( str, $scope.autoCompleteIndexName )
              .success( function(data) {
-                 if (!Utils.isEmpty($scope.str)) {
-                    $scope.autoCompleteData = data;
+                 
+                 // Check that the onChangeCount associated with this request matches the current
+                 // value of _this.onChangeCounter.  If it doesn't, then another 'onChange' event
+                 // and search is currently being processed so ignore this one.
+                 // 
+                 // Note: The (!Utils.isEmpty($scope.str)) is a workaround for a firefox bug where
+                 // the ESC key does weird things when i try to clear the input.
+                 if (_this.onChangeCounter == onChangeCount && !Utils.isEmpty($scope.str)) {
+                    $scope.autoCompleteData = data; 
+                 } else {
+                     Log.log(_this, "AutoCompleteService.get.success: onChangeCount (" + onChangeCount + ") != onChangeCounter (" + _this.onChangeCounter + ")");
                  }
              });
     };
@@ -797,6 +824,9 @@ angular.module( "JavaApp", ['ngRoute',
         $scope.str = "";
     }
 
+    /**
+     * If it's the ESC key, clear the input.
+     */
     var onKeypress = function($event) {
         Log.log(_this, "onKeypress: keycode: " + $event.keyCode + ", $scope.str: " + $scope.str);
         if ($event.keyCode == 27) {
@@ -806,11 +836,14 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var onChange = function() {
-        Log.log(_this, "onChange: $scope.str: " + $scope.str);
+        ++_this.onChangeCounter;
+
+        Log.log(_this, "onChange: $scope.str: " + $scope.str + ", onChangeCounter: " + _this.onChangeCounter);
+
         if (Utils.isEmpty($scope.str)) {
             clearListing();
         } else {
-            callAutoCompleteService($scope.str);
+            callAutoCompleteService($scope.str, _this.onChangeCounter);
         }
     };
 
