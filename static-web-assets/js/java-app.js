@@ -32,7 +32,11 @@ angular.module( "JavaApp", ['ngRoute',
 /**
  *
  */
-.service("DbService", function($http, $rootScope) {
+.service("DbService", function($http, 
+                               $rootScope, 
+                               Log) {
+
+    this.logging = { prefix: "DbService" };
 
     var onSuccess = function(data) {
         $rootScope.$emit( "$saJavadocModelChange", data );
@@ -45,7 +49,7 @@ angular.module( "JavaApp", ['ngRoute',
     var get = function(_id) {
         _id = _id.replace(/\?/g, "%3F");
 
-        console.log("DbService.get: " + _id);
+        Log.log(this, "get: " + _id);
 
         return $http.get( buildUrl(_id) )
                     .success( onSuccess )
@@ -61,7 +65,7 @@ angular.module( "JavaApp", ['ngRoute',
     var getQuietly = function(_id) {
         _id = _id.replace(/\?/g, "%3F");
 
-        console.log("DbService.getQuietly: " + _id);
+        Log.log(this, "getQuietly: " + _id);
 
         return $http.get( buildUrl(_id) )
                     .error( function(data, status, headers, config) {
@@ -77,7 +81,10 @@ angular.module( "JavaApp", ['ngRoute',
 /**
  *
  */
-.service("Formatter", function(_, Utils, JavadocModelUtils) {
+.service("Formatter", function(_, 
+                               Utils, 
+                               JavadocModelUtils, 
+                               Log) {
 
     var isEmpty = Utils.isEmpty;
 
@@ -189,7 +196,6 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var formatMethodSignature = function(parameters, flatSignature) {
-        // console.log("Formatter.formatMethodSignature: " + flatSignature);
         if (flatSignature.indexOf("...") > 0) {
             var formattedParms = _.map(parameters, formatParam);
             formattedParms[ formattedParms.length - 1 ] = formatParmAsVarArg( _.last(formattedParms) );
@@ -275,7 +281,7 @@ angular.module( "JavaApp", ['ngRoute',
 
         var tagText = (m[5] || m[0].replace("#","."));
 
-        // console.log("Formatter.formatLinkplainTag: " + JSON.stringify(tag) + "; ref: " + ref);
+        Log.log(this, "Formatter.formatLinkplainTag: " + JSON.stringify(tag) + "; ref: " + ref);
 
         return "<a href='#/q/java/qn/" + ref + "'>" + tagText + "</a>";
     };
@@ -331,7 +337,7 @@ angular.module( "JavaApp", ['ngRoute',
                              return arg.trim().split(" ")[0];
                          }).join(",")
                 + ")";
-        // -rx- console.log("formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
+        Log.log(this, "formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
 
         return retMe;
     }
@@ -387,6 +393,35 @@ angular.module( "JavaApp", ['ngRoute',
     this.formatInlineTag = formatInlineTag;
     this.formatInlineTags = formatInlineTags;
     this.formatAnnotation = formatAnnotation;
+})
+
+/**
+ * Centralized logging.
+ */
+.service("Log", function() {
+
+    /**
+     *
+     * Note:The "loggingObject.logging" field may itself be an object 
+     * that contains a "prefix" field. If it does, the prefix field is 
+     * prefixed on all log messages.
+     *
+     * Log.log( { logging: { prefix: "MyPrefix" } }, "log this msg" )
+     *
+     * @param loggingObject Must contain a non-null field "logging", otherwise
+     *                      the message is not logged.
+     * @param msg the message to log
+     *
+     */
+    var log = function(loggingObject, msg) {
+        if (loggingObject.logging) {
+            var prefix = (loggingObject.logging.prefix) ? loggingObject.logging.prefix + ": " : "";
+            console.log(prefix + msg);
+        }
+    }
+    
+    // Exported functions.
+    this.log = log;
 })
 
 
@@ -484,9 +519,7 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var isClassElement = function(model) {
-        var retMe = _.contains( ClassElementMetaTypes, getMetaType(model) );
-        // console.log("JavadocModelUtils.isClassElement: " + retMe + ", model: " + ((model) ? model.metaType : null));
-        return retMe;
+        return _.contains( ClassElementMetaTypes, getMetaType(model) );
     }
 
     var isPackage = function(model) {
@@ -597,7 +630,14 @@ angular.module( "JavaApp", ['ngRoute',
  * to packages/classes/methods/fields by querying the DB for the qualified name of the 
  * reference type. 
  */
-.service("ReferenceQueryService", function(DbService, JavadocModelUtils, $location, $window, $modal, Utils, _) {
+.service("ReferenceQueryService", function(DbService, 
+                                           JavadocModelUtils, 
+                                           $location, 
+                                           $window, 
+                                           $modal, 
+                                           Utils, 
+                                           _,
+                                           Log) {
 
     var openModalMessage = function( referenceName ) {
         var modalInstance = $modal.open({
@@ -644,12 +684,12 @@ angular.module( "JavaApp", ['ngRoute',
         var libraryId = Utils.parseLibraryFromLocation( Utils.getPrevLocation() );
 
         var filteredModels = _.filter( models, function(model) { return matchLibrary(model, libraryId); } );
-        // console.log( "ReferenceQueryService.filterModels: libraryId: " + libraryId + "; filteredModels: " + JSON.stringify(filteredModels, undefined, 2));
+        Log.log( this, "filterModels: libraryId: " + libraryId + "; filteredModels: " + JSON.stringify(filteredModels, undefined, 2));
         return (!Utils.isEmpty(filteredModels)) ? filteredModels : models;
     }
 
     var getReferenceTypeOnSuccess = function( models, referenceName) {
-        // console.log("ReferenceQueryService.success: " + JSON.stringify(models,undefined,2));
+        Log.log(this, "success: " + JSON.stringify(models,undefined,2));
         models = filterModels( models );
         if ( models.length == 1 ) {
             $location.hash( models[0]._id ).replace();
@@ -665,9 +705,9 @@ angular.module( "JavaApp", ['ngRoute',
      * This method is called when the route/location.hash changes to "/java/q/qn/<referenceName>".
      */
     var getReferenceType = function(id, prevId) {
-        console.log("ReferenceQueryService.getReferencetype: " + id);
+        Log.log(this, "getReferenceType: " + id);
         var referenceName = id.substring( "/q/java/qn/".length );
-        console.log("ReferenceQueryService.getReferencetype: " + referenceName);
+        Log.log(this, "getReferenceType: referenceName: " + referenceName);
 
         DbService.getQuietly( id )
                  .success( function(models) { 
@@ -683,12 +723,11 @@ angular.module( "JavaApp", ['ngRoute',
      */
     var resolveFirstId = function(referenceName) {
 
-        console.log("ReferenceQueryService.resolveFirstId: " + referenceName);
+        Log.log(this, "resolveFirstId: " + referenceName);
         var restUrl = "/q/java/qn/" + referenceName;
         return DbService.getQuietly( restUrl )
                  .then( function(response) {
                      var models = response.data;
-                     console.log("ReferenceQueryService.resolveFirstId.then: " + JSON.stringify(models));
                      return (models.length > 0) ? models[0]._id : null;
                  });
     }
@@ -737,10 +776,11 @@ angular.module( "JavaApp", ['ngRoute',
 .controller( "SearchController", function($scope, 
                                           AutoCompleteService, 
                                           Utils, 
-                                          JavadocModelUtils) {
+                                          JavadocModelUtils,
+                                          Log) {
     
     var callAutoCompleteService = function(str) {
-        console.log("SearchController.callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName);
+        Log.log(this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName);
         AutoCompleteService.get( str, $scope.autoCompleteIndexName )
              .success( function(data) {
                  $scope.autoCompleteData = data;
@@ -753,7 +793,6 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var onKeypress = function($event) {
-        // -rx- console.log("SearchController.onKeypress: " + JSON.stringify($event.keyCode));
         if ($event.keyCode == 27) {
             // ESC key
             clearListing();
@@ -794,16 +833,19 @@ angular.module( "JavaApp", ['ngRoute',
                                            Utils, 
                                            Formatter,
                                            ReferenceQueryService,
-                                           JavadocModelUtils) {
+                                           JavadocModelUtils,
+                                           Log) {
 
-    console.log("JavadocController: invoked");
+    var _this = this;
+
+    Log.log(_this, "invoked");
 
     // Listen for hash changes.
     $scope.$watch(function() {
                       return $location.hash();
                   },
                   function(id) {
-                      console.log("JavadocController: id: " + id);
+                      Log.log(_this, "$watch.callback: hash: " + id);
 
                       if ( Utils.isEmpty(id) ) {
                           fetchJavadoc("/java");
@@ -829,9 +871,6 @@ angular.module( "JavaApp", ['ngRoute',
     // Export functions to rootScope.
     $rootScope.isEmpty = Utils.isEmpty;
     
-    // disable logging.
-    // window.console.log = function() { };
-   
     /**
      * wrapper function around DbService.get with callbacks for pushing the result
      * into the $scope.
@@ -873,8 +912,6 @@ angular.module( "JavaApp", ['ngRoute',
                                                       Utils,
                                                       _) {
 
-    console.log("AllKnownSubclassesController: invoked");
-
     // initialize scope data
     $scope.allKnownSubclasses = [];
     $scope.isEmpty = Utils.isEmpty;
@@ -889,7 +926,6 @@ angular.module( "JavaApp", ['ngRoute',
     var fetchSubclasses = function(model) { 
 
         $scope.allKnownSubclasses = [];
-        console.log("AllKnownSubclassesController.fetchSubclasses: " + ((model) ? model._id : ""));
 
         DbService.getQuietly( buildUrl(model || $scope.javadocModel) )
                  .success( function(data) {
@@ -920,8 +956,6 @@ angular.module( "JavaApp", ['ngRoute',
                                                         // -rx- Utils,
                                                         JavadocModelUtils,
                                                         _) {
-
-    console.log("AllKnownImplementorsController: invoked");
 
     // initialize scope data
     $scope.allKnownImplementors = []
@@ -1000,8 +1034,6 @@ angular.module( "JavaApp", ['ngRoute',
      */
     var showFullDocForId = function( _id) {
 
-        console.log("MethodController.showFullDocForId: " + _id);
-
         // Check if the field/method is the primary view (and if so, don't bother toggling the full doc).
         if (isLocationHashOnId( _id )) {
             return;
@@ -1012,7 +1044,6 @@ angular.module( "JavaApp", ['ngRoute',
         if ($scope.showFullDocToggle) {
             DbService.getQuietly( _id )
                             .success( function(data) {
-                               // -rx- console.log("MethodController.showFullDocForId.success: " + JSON.stringify(data));
                                $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
                                $scope.model = data;
                             });
@@ -1051,13 +1082,20 @@ angular.module( "JavaApp", ['ngRoute',
 /**
  *
  */
-.controller( "NavPathBarController", function($scope, $rootScope, _, JavadocModelUtils, Utils) {
+.controller( "NavPathBarController", function($scope, 
+                                              $rootScope, 
+                                              _, 
+                                              JavadocModelUtils, 
+                                              Utils,
+                                              Log) {
+
+    var _this = this;
 
     /**
      * Listen for location/route changes and set the old/new in the Utils object.
      */
     $rootScope.$on( "$locationChangeSuccess", function(event, newUrl, oldUrl) {
-        console.log("NavPathBarController.$locationChangeSuccess: newUrl: " + newUrl + "; oldUrl: " + oldUrl);
+        Log.log(_this, "$locationChangeSuccess: newUrl: " + newUrl + "; oldUrl: " + oldUrl);
         Utils.setLocation(newUrl, oldUrl);
     });
 
@@ -1067,7 +1105,8 @@ angular.module( "JavaApp", ['ngRoute',
      */
     $rootScope.$on( "$saJavadocModelChange", function(event, model) {
 
-        // console.log( "NavPathBarController: on event: " + JavadocModelUtils.getId(model));
+        Log.log(_this, "$saJavadocModelChange: _id: " + JavadocModelUtils.getId(model));
+
         switch (JavadocModelUtils.getMetaType(model)) {
             case "package":
                 $scope.anchors = buildAnchorsForPackage(model);
@@ -1131,7 +1170,14 @@ angular.module( "JavaApp", ['ngRoute',
 /**
  *
  */
-.controller( "NavLibraryController", function($scope, $rootScope, JavadocModelUtils, _, DbService) {
+.controller( "NavLibraryController", function($scope, 
+                                              $rootScope, 
+                                              JavadocModelUtils, 
+                                              _, 
+                                              DbService,
+                                              Log) {
+
+    var _this = this;
 
     var currentLibraryId = null;
     var currentPackageId = null;
@@ -1143,7 +1189,7 @@ angular.module( "JavaApp", ['ngRoute',
      */
     $rootScope.$on( "$saJavadocModelChange", function(event, model) {
 
-        // console.log( "NavLibraryController: on event: " + JavadocModelUtils.getId(model));
+        Log.log( _this, "$saJavadocModelChange: _id: " + JavadocModelUtils.getId(model));
         
         switch (JavadocModelUtils.getMetaType(model)) {
             case "package":
@@ -1182,7 +1228,7 @@ angular.module( "JavaApp", ['ngRoute',
      */
     var refreshLibrary = function(newLibraryId) {
 
-        // console.log("NavLibraryController.refreshLibrary: current/new: " + currentLibraryId + ", " + newLibraryId);
+        Log.log(_this, "refreshLibrary: current/new: " + currentLibraryId + ", " + newLibraryId);
 
         if ( newLibraryId != currentLibraryId ) {
 
@@ -1291,7 +1337,6 @@ angular.module( "JavaApp", ['ngRoute',
  */
 .filter('formatInlineTags', function(Formatter) {
     return function(tags, packageName, className) {
-        // -rx- console.log("formatInlineTags: " + packageName + ", " + className);
         return Formatter.formatInlineTags(tags, packageName, className);
     }
 })
@@ -1347,7 +1392,7 @@ angular.module( "JavaApp", ['ngRoute',
  */
 .directive('saType', function($compile, Formatter) {
 
-    var x = 0, y=0;
+    // -rx- var x = 0, y=0;
 
     var linkFn = function (scope, element, attrs) {
         // console.log("saType.link: " + JSON.stringify( scope.typeDoc, undefined, 2) );
@@ -1374,8 +1419,6 @@ angular.module( "JavaApp", ['ngRoute',
  *
  */
 .directive('saTypeParameters', function($compile, Formatter) {
-
-    var x = 0, y=0;
 
     var linkFn = function ($scope, element, attrs) {
 
