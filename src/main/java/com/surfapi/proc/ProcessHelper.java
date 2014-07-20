@@ -97,10 +97,15 @@ public class ProcessHelper<T extends ProcessHelper> {
      * 
      * Note: observers should be added *BEFORE* calling spawnStreamReaders.
      * 
+     * @param stream the output stream to observe (Stream.STDOUT, Stream.STDERR)
+     * @param observer the observer
+     * 
      * @return this
      */
     public T addObserver(Stream stream, Observer observer) {
-        if (stream == Stream.STDOUT) {
+        if (observer == null) {
+            // ignore
+        } else if (stream == Stream.STDOUT) {
             stdoutObservers.add(observer);
         } else {
             stderrObservers.add(observer);
@@ -112,6 +117,8 @@ public class ProcessHelper<T extends ProcessHelper> {
      * Add the given output observer to both the STDOUT and STDERR streams.
      * 
      * Note: observers should be added *BEFORE* calling spawnStreamReaders.
+     * 
+     * @param observer the observer
      * 
      * @return this
      */
@@ -183,13 +190,13 @@ public class ProcessHelper<T extends ProcessHelper> {
         // waiting for this guy to read some output.
         stdout = getExecutorService().submit( new Callable<List<String>>() {
             public List<String> call() {
-                return loadStreamUnchecked(Stream.STDOUT, process.getInputStream());
+                return loadStreamUnchecked(Stream.STDOUT, getProcess().getInputStream());
             }
         });
 
         stderr = getExecutorService().submit( new Callable<List<String>>() {
             public List<String> call() {
-                return loadStreamUnchecked(Stream.STDERR, process.getErrorStream());
+                return loadStreamUnchecked(Stream.STDERR, getProcess().getErrorStream());
             }
         });
         
@@ -206,7 +213,7 @@ public class ProcessHelper<T extends ProcessHelper> {
         
         spawnStreamReaders();
 
-        process.waitFor();
+        getProcess().waitFor();
         
         shutdownExecutor();
         
@@ -222,8 +229,8 @@ public class ProcessHelper<T extends ProcessHelper> {
         
         spawnStreamReaders();
         
-        process.destroy();
-        process.waitFor();
+        getProcess().destroy();
+        getProcess().waitFor();
         
         shutdownExecutor();
 
@@ -286,7 +293,7 @@ public class ProcessHelper<T extends ProcessHelper> {
      * @return process.exitValue.
      */
     public int exitValue() {
-        return process.exitValue();
+        return getProcess().exitValue();
     }
     
     /**

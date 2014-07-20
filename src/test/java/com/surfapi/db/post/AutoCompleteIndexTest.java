@@ -57,6 +57,8 @@ public class AutoCompleteIndexTest {
      */
     @BeforeClass
     public static void beforeClass() throws Exception {
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
         // Setup the db.
         String libraryId = "/java/com.surfapi/1.0";
         
@@ -137,6 +139,33 @@ public class AutoCompleteIndexTest {
             Log.trace(this, "testBasic: " + obj.get("id"));
             assertTrue( ((String)obj.get("name")).startsWith("Cawl") );
         }
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testMatchWholeName() throws Exception {
+        
+        DB db = new MongoDBImpl(MongoDbName);
+        
+        List<Map> docs = new AutoCompleteIndex().inject(db).query( "java", "demointerface", 25 );
+        
+        Log.trace( this, "testMatchWholeName: match start: ", Cawls.pluck(docs, "id"));
+
+        assertEquals(3, docs.size());
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "DemoInterface" ) ) );
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "DemoInterface2" ) ) );
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "DemoInterfaceSubIntf" ) ) );
+        
+        // run the query again, this time with a ' ' at the end. 
+        // Should match only DemoInterface
+        docs = new AutoCompleteIndex().inject(db).query( "java", "demointerface ", 25 );
+        Log.trace( this, "testMatchWholeName: match whole name: ", Cawls.pluck(docs, "id"));
+        
+        assertEquals(1, docs.size());
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "DemoInterface" ) ) );
+        
     }
  
     /**

@@ -1,14 +1,13 @@
 #!/bin/sh
 
-if [ -z $1 ]; then
-    echo "usage: $0 <mainClass>"
+if [ -z $2 ]; then
+    echo "usage: $0 <mongo-uri> <mainClass>"
     echo "      <mainClass>: PostProcessorMain, ResetMongoMain"
     exit 1
 fi
 
-if [ -z $MONGOLAB_URI ]; then
-    MONGOLAB_URI=mongodb://localhost/test
-fi
+MONGOLAB_URI=$1
+shift
 
 echo "connecting to $MONGOLAB_URI..."
 

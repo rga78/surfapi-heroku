@@ -1,4 +1,7 @@
-angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
+angular.module( "JavaApp", ['ngRoute', 
+                            'ui.bootstrap', 
+                            'ngSanitize', 
+                            'ui.keypress'] )
         
 /**
  * 
@@ -468,6 +471,10 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
         return (!isEmpty(model)) ? model.metaType : null;
     }
 
+    var isInterface = function(model) {
+        return "interface" == getMetaType(model);
+    }
+
     var isClass = function(model) {
         return _.contains( ClassMetaTypes, getMetaType(model) );
     }
@@ -545,6 +552,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     this.getQualifiedName = getQualifiedName;
     this.getName = getName;
     this.isMethod = isMethod;
+    this.isInterface = isInterface;
     this.isClass = isClass;
     this.isClassElement = isClassElement;
     this.isPackage = isPackage;
@@ -732,7 +740,8 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
                                           JavadocModelUtils) {
     
     var callAutoCompleteService = function(str) {
-        AutoCompleteService.get( str )
+        console.log("SearchController.callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName);
+        AutoCompleteService.get( str, $scope.autoCompleteIndexName )
              .success( function(data) {
                  $scope.autoCompleteData = data;
              });
@@ -743,7 +752,15 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
         $scope.str = "";
     }
 
-    var autoCompleteKeypress = function() {
+    var onKeypress = function($event) {
+        // -rx- console.log("SearchController.onKeypress: " + JSON.stringify($event.keyCode));
+        if ($event.keyCode == 27) {
+            // ESC key
+            clearListing();
+        }
+    }
+
+    var onChange = function() {
         if (Utils.isEmpty($scope.str)) {
             clearListing();
         } else {
@@ -753,7 +770,8 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
 
     // Export to scope.
     $scope.clearListing = clearListing;
-    $scope.autoCompleteKeypress = autoCompleteKeypress;
+    $scope.onKeypress = onKeypress;
+    $scope.onChange = onChange;
     $scope.getReferenceName = JavadocModelUtils.getReferenceName;
    
 })
@@ -799,6 +817,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     // Export functions to scope.
     $scope.formatSeeTag = Formatter.formatSeeTag;
     $scope.formatAnnotation = Formatter.formatAnnotation;
+    $scope.isInterface = JavadocModelUtils.isInterface;
     $scope.isClass = JavadocModelUtils.isClass;
     $scope.isClassElement = JavadocModelUtils.isClassElement;
     $scope.isPackage = JavadocModelUtils.isPackage;
@@ -1155,6 +1174,7 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     var showLibrary = function(model) {
         currentLibraryId = (model != null) ? model._id : null;
         $scope.libraryModel = model;
+        $scope.autoCompleteIndexName = $scope.libraryModel._id;
     };
 
     /**
@@ -1191,42 +1211,9 @@ angular.module( "JavaApp", ['ngRoute', 'ui.bootstrap', 'ngSanitize'] )
     var clearLibrary = function() {
         clearPackage();
         $scope.libraryModel = null;
+        $scope.autoCompleteIndexName = null;
         currentLibraryId = null;
     };
-
-})
-
-
-/**
- * TODO: probably can combine this with SearchController.
- */
-.controller( "LibrarySearchController", function($scope, AutoCompleteService, Utils) {
-    
-    console.log("LibrarySearchController:  $scope.libraryModel: " + $scope.libraryModel._id);
-
-    var callAutoCompleteService = function(str) {
-        AutoCompleteService.get( str, $scope.libraryModel._id )
-             .success( function(data) {
-                 $scope.autoCompleteData = data;
-             });
-    };
-        
-    var clearListing = function() {
-        $scope.autoCompleteData = [];
-        $scope.str = "";
-    }
-
-    var autoCompleteKeypress = function() {
-        if (Utils.isEmpty($scope.str)) {
-            clearListing();
-        } else {
-            callAutoCompleteService($scope.str);
-        }
-    };
- 
-    // Export to scope.
-    $scope.clearListing = clearListing;
-    $scope.autoCompleteKeypress = autoCompleteKeypress;
 
 })
 

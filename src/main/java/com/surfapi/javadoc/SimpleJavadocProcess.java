@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.FileUtils;
@@ -17,7 +18,9 @@ import com.surfapi.proc.ProcessException;
 import com.surfapi.proc.ProcessHelper;
 
 /**
- * Runs javadoc using our custom MongoDoclet.
+ * Runs javadoc using our custom doclet.  
+ * Uses MongoDoclet by default.  
+ * Use setDocletClass(Class docletClazz) to specify a different doclet.
  *
  * javadoc \
  *      -doclet com.surfapi.javadoc.MongoDoclet \
@@ -57,6 +60,16 @@ public class SimpleJavadocProcess {
      * List of packages to process.
      */
     private List<String> packages = new ArrayList<String>();
+    
+    /**
+     * The doclet class
+     */
+    private Class<?> docletClazz = MongoDoclet.class;
+    
+    /**
+     * The -quiet flag
+     */
+    private boolean quiet = false;
 
     /**
      * @return the classpath (-docletpath) for the custom doclet.
@@ -159,26 +172,55 @@ public class SimpleJavadocProcess {
         return packages;
     }
 
+    /**
+     * @return this
+     */
+    public SimpleJavadocProcess setDocletClass(Class<?> docletClazz) {
+        this.docletClazz = docletClazz;
+        return this;
+    }
+    
+    /**
+     * @return the doclet class
+     */
+    public Class<?> getDocletClass() {
+        return docletClazz;
+    }
+    
+    /**
+     * @return this
+     */
+    public SimpleJavadocProcess setQuiet(boolean quiet) {
+        this.quiet = quiet;
+        return this;
+    }
+    
+    /**
+     * @return "-quiet" if set, otherwise ""
+     */
+    public String getQuietOption() {
+        return (quiet) ? "-quiet" : "";
+    }
     
     /**
      * Build Runnable work for spawning and waiting for the javadoc process.
      * 
      * @return A Runnable that will spawn and wait for the javadoc process.
      */
-    protected Runnable buildJavadocProcessRunnable( ) {
+    protected Callable<ProcessHelper> buildJavadocProcessRunnable( ) {
         
-        return new Runnable() {
-            public void run() {
+        return new Callable<ProcessHelper>() {
+            public ProcessHelper call() {
                 
+                ProcessHelper processHelper = null;
                 try {
                     
                     String processDescription = "javadoc against sourcepath: " +  getSourcePath().getCanonicalPath();
                     Log.info(this, "run: " + processDescription);
                     
-                    ProcessHelper processHelper = new ProcessHelper( buildJavadocProcess() )
-                                                            .setDescription(processDescription)
-                                                            .spawnStreamReaders()
-                                                            .waitFor();
+                    processHelper = buildProcessHelper().setDescription(processDescription)
+                                                        .spawnStreamReaders()
+                                                        .waitFor();
 
                     if (processHelper.exitValue() != 0) {
                         Log.error(this, "run: " + new ProcessException( processHelper ));
@@ -187,6 +229,8 @@ public class SimpleJavadocProcess {
                 } catch (Exception e) {
                     Log.error(this, "run: " + e);
                 }
+                
+                return processHelper;
             }
         };
     }
@@ -194,8 +238,15 @@ public class SimpleJavadocProcess {
     /**
      * Run the javadoc command.
      */
-    public void run() throws IOException, InterruptedException, ExecutionException {
-        buildJavadocProcessRunnable().run();
+    public ProcessHelper run() throws IOException, InterruptedException, ExecutionException, Exception {
+        return buildJavadocProcessRunnable().call();
+    }
+    
+    /**
+     * @return a ProcessHelper wrapped around the javadoc process.
+     */
+    public ProcessHelper buildProcessHelper() throws IOException {
+        return new ProcessHelper( buildJavadocProcess() );
     }
 
     /**
@@ -219,7 +270,8 @@ public class SimpleJavadocProcess {
                                                       "-docletpath",
                                                       getDocletPath(),
                                                       "-doclet",
-                                                      MongoDoclet.class.getCanonicalName(),
+                                                      getDocletClass().getCanonicalName(),
+                                                      getQuietOption(),
                                                       "-J-Xms1024m",
                                                       "-J-Xmx4096m",
                                                       "-J-DMONGOLAB_URI=" + getMongoUri(),

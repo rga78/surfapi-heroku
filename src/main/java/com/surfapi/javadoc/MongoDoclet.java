@@ -1,5 +1,6 @@
 package com.surfapi.javadoc;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -67,7 +68,7 @@ public class MongoDoclet extends JsonDoclet {
     }
     
     /**
-     * 
+     * The meat.
      */
     protected boolean go() {
         
@@ -78,20 +79,29 @@ public class MongoDoclet extends JsonDoclet {
         
         // Process classes and add them to the db.
         for (ClassDoc classDoc : rootDoc.classes()) {
-            try {
-                getDb().save( getLibraryId(), processClass(classDoc));
-            } catch (Exception e) {
-                Log.error(this, "go: caught exception", e);
-            }
+            Log.trace( this, "go: processing class: " + classDoc.qualifiedName() );
+            safeSave( getLibraryId(), processClass(classDoc));
         }
         
         // Add all packages to the db.
-        getDb().save( getLibraryId(), processPackages( getPackageDocs() ));
+        Log.trace( this, "go: processing packages...");
+        safeSave( getLibraryId(), processPackages( getPackageDocs() ));
         
         // Create an "overview" or "summary" document for the library (contains package lists).
-        getDb().save(DB.LibraryCollectionName, createLibraryOverview());
+        safeSave(DB.LibraryCollectionName, Arrays.asList( createLibraryOverview() ) );
 
         return true;
+    }
+        
+    /**
+     * Wrap DB.save() with try-catch.
+     */
+    protected void safeSave(String libraryId, Collection<Map> javadocModels) {
+        try {
+            getDb().save( libraryId, javadocModels);
+        } catch (Exception e) {
+            Log.error(this, "safeSave: caught exception", e);
+        }
     }
     
     /**

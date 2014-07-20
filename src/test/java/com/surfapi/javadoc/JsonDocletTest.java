@@ -6,10 +6,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import java.io.File;
-import java.util.List;
+import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
@@ -21,6 +20,10 @@ import org.junit.Test;
 
 import com.sun.javadoc.MethodDoc;
 import com.surfapi.junit.CaptureSystemOutRule;
+import com.surfapi.log.Log;
+import com.surfapi.proc.ProcessHelper;
+import com.surfapi.proc.ProcessHelper.Stream;
+import com.surfapi.proc.StreamCollector;
 
 /**
  *
@@ -46,13 +49,28 @@ public class JsonDocletTest {
     public void test() throws Exception {
 
         // assertEquals("C:\\easy\\mysandbox\\javadoc-parser", System.getProperty("user.dir") );
-
-        Pair<List<String>,List<String>> out = new JavadocProcessForTesting( new File("src/test/java/com/surfapi/test") ).run();
         
+        String libraryId = "/java/com.surfapi/1.0";
+        File sourcePath = new File("src/test/java");
+        
+        StreamCollector streamCollector = new StreamCollector();
+
+        ProcessHelper javadocProcess = new SimpleJavadocProcess()
+                                                    .setDocletClass( JsonDoclet.class )
+                                                    .setLibraryId( libraryId )
+                                                    .setSourcePath( sourcePath )
+                                                    .setPackages( Arrays.asList( "com.surfapi.test" ) )
+                                                    .setQuiet(true)
+                                                    .buildProcessHelper()
+                                                    .addObserver( Stream.STDOUT, streamCollector )
+                                                    .spawnStreamReaders()
+                                                    .waitFor();
+    
         // For manual verification...
         // FileUtils.write( new File("test.out"), StringUtils.join( out.getLeft(), "\n") );
+        Log.trace(this, "test: ", streamCollector.getOutput());
         
-        JSONArray doc = (JSONArray) new JSONParser().parse( "[" + StringUtils.join( out.getLeft(), "" ) + "]" );
+        JSONArray doc = (JSONArray) new JSONParser().parse( "[" + StringUtils.join(streamCollector.getOutput(), "" ) + "]" );
         
         // The package is added last.
         assertFalse( doc.isEmpty() );

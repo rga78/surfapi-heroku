@@ -2,7 +2,17 @@
 <div ng-controller="SearchController" >
     <form role="search">
         <div class="input-group">
-            <input type="text" class="form-control" placeholder="Class or package name..." ng-model="str" ng-change="autoCompleteKeypress()">
+            <input type="text" 
+                   class="form-control" 
+                   placeholder="Class or package name..." 
+                   ng-model="str" 
+                   ng-trim="false"
+                   ng-keypress="onKeypress($event)"
+                   ng-change="onChange()" 
+                   ui-keydown="{esc: 'onKeypress($event)'}" 
+                   ui-keypress="{esc: 'onKeypress($event)'}" 
+                   ui-keyup="{esc: 'onKeypress($event)'}" 
+                   >
             <div class="input-group-btn">
                 <button tabindex="-1" class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
             </div>

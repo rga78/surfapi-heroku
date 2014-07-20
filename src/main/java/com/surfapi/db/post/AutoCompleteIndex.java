@@ -138,8 +138,17 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
      */
     public List<Map> query(String indexName, String text, int limitResults) {
         return getDb().find( buildAutoCompleteIndexName( indexName ), 
-                        new MapBuilder().append( "_searchName", new MapBuilder().append( "$regex", "^" + normalizeSearchName(text) + ".*") ), 
-                        limitResults );
+                             new MapBuilder().append( "_searchName", buildSearchNameCriteria(text) ),
+                             limitResults );
+    }
+    
+    /**
+     * @return the criteria by which to match against the _searchName field in the query
+     */
+    protected Object buildSearchNameCriteria(String text) {
+        return (!text.endsWith(" ")) 
+                ? new MapBuilder().append( "$regex", "^" + normalizeSearchName(text) + ".*")
+                : normalizeSearchName(text.trim());
     }
     
     /**

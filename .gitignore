@@ -1,8 +1,8 @@
 target
+bower_components
 .*.swp
 .classpath
 .settings
 .project
-jdkdoc.sh
 sajavadoc.mongolab.sh
 

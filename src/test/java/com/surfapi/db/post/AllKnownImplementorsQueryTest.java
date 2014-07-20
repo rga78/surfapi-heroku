@@ -54,6 +54,8 @@ public class AllKnownImplementorsQueryTest {
      */
     @BeforeClass
     public static void beforeClass() throws Exception {
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
         // Setup the db.
         String libraryId = "/java/com.surfapi/1.0";
         

@@ -17,7 +17,9 @@ import com.surfapi.main.ArgMap;
 import com.surfapi.main.Task;
 
 /**
- *
+ * Utility task.  Builds indexes from javadoc model data.
+ * 
+ * One or all indexes can be built, using the data from 1 or all javadoc libraries.
  */
 public class BuildIndexTask implements Task {
 

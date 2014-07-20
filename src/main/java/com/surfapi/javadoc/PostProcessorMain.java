@@ -32,7 +32,8 @@ public class PostProcessorMain {
         dispatcher.registerTask(new HelpTask(dispatcher.getTaskList()));
                
         // Process the command
-        System.exit( dispatcher.runProgram(args) );
+        // -rx- System.exit( dispatcher.runProgram(args) );
+        dispatcher.runProgram(args) ;
     }
 
 }

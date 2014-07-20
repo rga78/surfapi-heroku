@@ -30,6 +30,7 @@
     <script src="js/angular-sanitize.min.js"></script>
     <script src="js/ui-bootstrap.js"></script>
     <script src="js/ui-bootstrap-tpls.js"></script>
+    <script src="js/keypress.js"></script>
     <script src="js/underscore-min.js"></script>
     <script src="js/java-app.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -98,7 +99,8 @@
                         </div>
                 
                         <!-- interfaces -->
-                        <div ng-if="!isEmpty(javadocModel.allInterfaceTypes)">
+                        <!-- Note: don't show for interfaces (already showed under superclasses) -->
+                        <div ng-if="!isEmpty(javadocModel.allInterfaceTypes) && !isInterface(javadocModel)">
                             <h4>Implements</h4>
                             <ul>
                                 <li class="comma-separated-list">
@@ -235,7 +237,7 @@
                                     <li ng-repeat="methodDoc in javadocModel.methods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
                                 </ul>
                                 <div ng-repeat="inheritedDoc in javadocModel.allInheritedMethods">         
-                                    <h4 class="vertical-spacer">Inherited from <sa-type doc="inheritedDoc.superclassType"></sa-type></h4>
+                                    <h4 class="vertical-spacer inherited-from-title">Inherited from <sa-type doc="inheritedDoc.superclassType"></sa-type></h4>
                                     <ul class="table-condensed table-striped model-list" >
                                         <li ng-repeat="methodDoc in inheritedDoc.inheritedMethods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
                                     </ul>
