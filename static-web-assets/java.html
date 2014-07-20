@@ -138,7 +138,7 @@
                         </div>
 
                         <!-- All known implementors -->
-                        <div ng-controller="AllKnownImplementorsController">
+                        <div ng-if="isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
                                 <h4>All Known Implementors</h4>
                                 <ul>
                                     <li ng-if="none">
