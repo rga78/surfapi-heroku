@@ -235,9 +235,9 @@ ul {
     right: 30px; */
 
   border-color: rgba(82, 82, 82, 0.8); 
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 82, 82, 0.6);
-  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 82, 82, 0.6);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 82, 82, 0.6);
+  -moz-box-shadow: -3px 0px 8px #666, 3px 0px 8px #666;
+  -webkit-box-shadow: -3px 0px 8px #666, 3px 0px 8px #666;
+  box-shadow: -3px 0px 8px #666, 3px 0px 8px #666;
   outline: 0;
   outline: thin dotted \9;
 }
@@ -261,14 +261,12 @@ a {
 .border-highlight a:focus div
 {
 
-  border-color: rgba(82, 168, 236, 0.8);
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
-  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+  background-color: #dee3e9; 
+  border: solid 1px #9eadc0;
+
   outline: 0;
   outline: thin dotted \9;
 
-    color: gray;
 }
 
 
