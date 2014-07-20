@@ -7,10 +7,7 @@
                    placeholder="Class or package name..." 
                    ng-model="str" 
                    ng-trim="false"
-                   ng-keypress="onKeypress($event)"
                    ng-change="onChange()" 
-                   ui-keydown="{esc: 'onKeypress($event)'}" 
-                   ui-keypress="{esc: 'onKeypress($event)'}" 
                    ui-keyup="{esc: 'onKeypress($event)'}" 
                    >
             <div class="input-group-btn">

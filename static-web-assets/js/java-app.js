@@ -778,12 +778,17 @@ angular.module( "JavaApp", ['ngRoute',
                                           Utils, 
                                           JavadocModelUtils,
                                           Log) {
+
+    var _this = this;
+    // _this.logging = { prefix: "SearchController" };
     
     var callAutoCompleteService = function(str) {
-        Log.log(this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName);
+        Log.log(_this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName);
         AutoCompleteService.get( str, $scope.autoCompleteIndexName )
              .success( function(data) {
-                 $scope.autoCompleteData = data;
+                 if (!Utils.isEmpty($scope.str)) {
+                    $scope.autoCompleteData = data;
+                 }
              });
     };
         
@@ -793,6 +798,7 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var onKeypress = function($event) {
+        Log.log(_this, "onKeypress: keycode: " + $event.keyCode + ", $scope.str: " + $scope.str);
         if ($event.keyCode == 27) {
             // ESC key
             clearListing();
@@ -800,6 +806,7 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var onChange = function() {
+        Log.log(_this, "onChange: $scope.str: " + $scope.str);
         if (Utils.isEmpty($scope.str)) {
             clearListing();
         } else {
