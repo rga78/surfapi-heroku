@@ -28,7 +28,7 @@ import com.surfapi.junit.DropMongoDBRule;
 import com.surfapi.junit.MongoDBProcessRule;
 
 
-public class PostProcessorMainTest {
+public class SurfapiUtilityMainTest {
 
     /**
      * For connecting to the mongodb service
@@ -89,7 +89,7 @@ public class PostProcessorMainTest {
         
         // Run the post-processor
         MongoDBService.setMongoUri(MongoUri);
-        PostProcessorMain.main( new String[] { "buildIndex", "--libraryId=" + libraryId } );
+        SurfapiUtilityMain.main( new String[] { "buildIndex", "--libraryId=" + libraryId } );
         
 
         // Verify reference query ---------------------------
@@ -107,15 +107,6 @@ public class PostProcessorMainTest {
         }
     
 
-        // -rx- // Verify SetStubIds ------------------------
-        // -rx- Map doc = db.read( "/java/com.surfapi/1.0/com.surfapi.coll.Cawls" );
-        // -rx- assertNotNull( doc );
-        // -rx- docs = (List<Map>) doc.get("methods");
-        // -rx- assertFalse( docs.isEmpty() );
-        // -rx- assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "_id", "/java/com.surfapi/1.0/com.surfapi.coll.Cawls.pick(java.util.Map,java.util.Collection)" ) ) );
-        // -rx- for (Map doc1 : docs) {
-        // -rx-     assertNotNull( doc1.get("_id" ) );
-        // -rx- }
     }
 
 }

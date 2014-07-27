@@ -31,9 +31,14 @@ public interface DB  {
     }
     
     /**
-     * Run given forAll callback against every object in the db.
+     * Run given forAll callback against every document in the given set of collections.
      */
     public void forAll( Collection<String> collections, ForAll callback );
+    
+    /**
+     * Run given forAll callback against every document in the given collection.
+     */
+    public void forAll( String collection, ForAll callback );
 
     /**
      * @return the obj in the given collection at the given key.
@@ -101,6 +106,11 @@ public interface DB  {
      * Remove documents from the given collection that match the given filter.
      */
     public Object remove(String collection, Map filter);
+
+    /**
+     * @return the name/id of this db.
+     */
+    public String getName();
     
 }
 

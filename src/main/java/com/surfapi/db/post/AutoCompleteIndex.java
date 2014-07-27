@@ -45,12 +45,10 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         
         Log.info(this, "buildIndexForLang: building index for language " + lang);
         
+        // Note: we must processes all libraries -- even different versions of the same library --
+        // since different versions may contain different classes.
         getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder(indexName) );
         
-        // -rx- Build the index against the *latest versions only* of each library.
-        // -rx- db.forAll( (Collection<String>) Cawls.pluck( LibraryUtils.latestVersionsOnly( db.getLibraryList(lang) ), "_id" ), 
-        // -rx-            new IndexBuilder( indexName ) );
-
         getDb().createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
         
         buildIndexesForLibraries( getDb().getLibraryIds(lang) );
@@ -95,23 +93,45 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         Map library =  JavadocMapUtils.mapLibraryId(libraryId);
         
         String indexName = buildAutoCompleteIndexNameForLang( (String) library.get("lang") ) ;
-        
-        // -rx- if (shouldAddLibraryToIndex( library ) ) {
             
-            Log.info(this, "addLibraryToIndex: adding library " + libraryId + ", " + library.get("name"));
-            
-            // -rx- // Remove all existing entries for this library.
-            // -rx- db.remove( indexName, new MapBuilder<String, String>()
-            // -rx-                             .append( JavadocMapUtils.LibraryFieldName + ".name", (String) library.get("name")) );
-            
-            getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
-        // -rx- }
+        Log.info(this, "addLibraryToIndex: adding library " + libraryId + ", " + library.get("name"));
+
+        getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
         
         buildIndexForLibrary(libraryId);
         
         return this;
         
     }
+    
+    /**
+     * Remove (1) the library's index and
+     *        (2) all entries for the given library from the lang's index.
+     */
+    public AutoCompleteIndex removeLibrary(String libraryId) {
+        
+        Map<String, String> library =  JavadocMapUtils.mapLibraryId(libraryId);
+        
+        Log.info(this, "removeLibrary: removing library " + libraryId + ", " + library.get("name"));
+        
+        // Remove from lang's index.
+        // Note: If this library has multiple versions then we must make sure not to 
+        // delete the entries associated with other versions.  If there's only
+        // 1 version, then we're ok.
+        // TODO: handle libraries with multiple versions
+        if (getDb().getLibraryVersions( library.get("lang"), library.get("name") ).size() == 1) {
+            
+            String indexName = buildAutoCompleteIndexNameForLang( (String) library.get("lang") ) ;
+        
+            getDb().remove( indexName, new MapBuilder<String, String>()
+                                              .append( JavadocMapUtils.LibraryFieldName + ".name", library.get("name")) );
+        }
+        
+        // Remove library's index
+        getDb().drop( buildAutoCompleteIndexName(libraryId) );
+        
+        return this;
+     }
 
     /**
      * @return the auto-complete index collection name for the given collection

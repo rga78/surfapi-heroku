@@ -2,7 +2,9 @@
 package com.surfapi.db.post;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -109,6 +111,46 @@ public class AllKnownImplementorsQueryTest {
 
         assertEquals(0, impls.size());
        
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testAddAndRemoveLibrary() throws Exception {
+        
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
+        // add the library first
+        String libraryId = "/java/com.surfapi.proc/1.0";
+        
+        File baseDir = new File("src/main/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        // Add library to the index
+        new AllKnownImplementorsQuery().inject(db).addLibraryToIndex(libraryId);
+        
+        // Verify it's there 
+        List<Map> impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
+        assertFalse( impls.isEmpty() );
+        assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
+        assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
+        
+        // Now remove
+        new AllKnownImplementorsQuery().inject(db).removeLibrary(libraryId);
+        
+        // Verify it's gone
+        impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
+        assertNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
+        assertNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
     }
 
 

@@ -19,12 +19,12 @@ import org.apache.commons.lang3.StringUtils;
  * No-value arguments are specified with just their name: <name>
  * 
  */
-public class ArgMap extends HashMap<String, Object> {
+public class TaskArgs extends HashMap<String, Object> {
     
     /**
      * CTOR.
      */
-    public ArgMap(String[] args) {
+    public TaskArgs(String[] args) {
         parseArgs(args);
     }
     
@@ -84,7 +84,7 @@ public class ArgMap extends HashMap<String, Object> {
      * 
      * @throws IllegalArgumentException if the value is null or empty.
      */
-    public String getRequiredString(String argName) {
+    public String getRequiredStringValue(String argName) {
         String retMe = getStringValue(argName);
         
         if ( StringUtils.isEmpty(retMe) ) {

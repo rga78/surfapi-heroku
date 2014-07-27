@@ -14,6 +14,8 @@ import com.surfapi.db.DB;
 import com.surfapi.log.Log;
 
 /**
+ * Index of superclass-name -> subclasses
+ * 
  * Note: subclasses are registered only for their IMMEDIATE superclass (not
  *       parents of the superclass).
  */
@@ -60,15 +62,40 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
     }
     
     /**
-     * Add the documents from the given libraries to the index.
+     * Add the documents from the given library to the index.
      */
-    public AllKnownSubclassesQuery addLibrariesToIndex( List<String> libraryIds ) {
+    public AllKnownSubclassesQuery addLibraryToIndex( String libraryId ) {
 
-        Log.info( this, "addLibrariesToIndex: " + libraryIds);
+        Log.info( this, "addLibraryToIndex: " + libraryId);
         
-        getDb().forAll( libraryIds , new IndexBuilder() );
+        getDb().forAll( libraryId , new IndexBuilder() );
 
         ensureIndex();
+        
+        return this;
+    }
+    
+    /**
+     * Remove the given library from the index.  
+     * 
+     * That is, remove all entries associated with this library.
+     */
+    public AllKnownSubclassesQuery removeLibrary( String libraryId ) {
+
+        Log.info( this, "removeLibrary: " + libraryId);
+        
+        Map<String, String> library =  JavadocMapUtils.mapLibraryId(libraryId);
+        
+        // Note: If this library has multiple versions then we must make sure not to 
+        // delete the entries associated with other versions.  If there's only
+        // 1 version, then we're ok.
+        // TODO: handle libraries with multiple versions
+        if (getDb().getLibraryVersions( library.get("lang"), library.get("name") ).size() == 1) {
+            
+            // TODO: probably should be filtering on lang too.
+            getDb().remove( getCollectionName(), new MapBuilder<String, String>()
+                                                      .append( JavadocMapUtils.LibraryFieldName + ".name", library.get("name")) );
+        }
         
         return this;
     }

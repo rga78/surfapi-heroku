@@ -32,8 +32,13 @@ td {
 }
 
 .border-left {
-    border-left: solid 1px lightgray;
+    border-left: solid 1px #9eadc0;
 }
+
+.border-left-thick {
+    border-left: solid 3px #9eadc0;
+}
+
 
 .border-right {
     border-right: solid 1px lightgray;
@@ -116,9 +121,10 @@ td {
 }
 
 .nav-path-bar {
-    border-bottom: solid 1px lightgray;
-    border-top: solid 1px lightgray;
+    border-top: solid 1px #9eadc0;
+    border-bottom: solid 1px #9eadc0;
     padding: 10px;
+    margin-top: 25px;
 }
 
 .nav-path-bar a {
@@ -274,7 +280,7 @@ a {
     border-top: solid 1px #9eadc0;
     border-right: solid 1px #9eadc0;
     border-left: solid 1px #9eadc0;
-    padding: 5px;
+    padding: 10px;
     margin-bottom: 0px;
     background-color: #dee3e9; 
 }
@@ -286,7 +292,7 @@ a {
 }
 
 h1.model-title {
-    margin: 0 0 25px 0;
+    margin: 0 0 15px 0;
 }
 
 .model-identifier {
@@ -314,6 +320,10 @@ table.model-list > tbody > tr:last-child {
     /* border-bottom: inherit; */
 }
 
+.padding {
+    padding: 25px;
+}
+
 .padding-lite {
     padding: 15px;
 }
@@ -334,7 +344,6 @@ table.model-list > tbody > tr:last-child {
     padding-left: 25px;
     padding-right: 25px;
 }
-
 
 .padding-horizontal-lite {
     padding-left: 15px;

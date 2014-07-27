@@ -2,6 +2,9 @@
 package com.surfapi.db.post;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -17,6 +20,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import com.surfapi.app.JavadocMapUtils;
+import com.surfapi.coll.Cawls;
+import com.surfapi.coll.MapBuilder;
 import com.surfapi.db.DB;
 import com.surfapi.db.MongoDBImpl;
 import com.surfapi.javadoc.SimpleJavadocProcess;
@@ -125,6 +130,44 @@ public class AllKnownSubclassesQueryTest {
         assertTrue( subclasses.isEmpty() );
     }
 
+    
+    /**
+     * 
+     */
+    @Test
+    public void testAddAndRemoveLibrary() throws Exception {
+        
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
+        // add the library first
+        String libraryId = "/java/com.surfapi.proc/1.0";
+        
+        File baseDir = new File("src/main/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        // Add library to the index
+        new AllKnownSubclassesQuery().inject(db).addLibraryToIndex(libraryId);
+        
+        // Verify it's there 
+        List<Map> subclasses = new AllKnownSubclassesQuery().inject(db).query("java.io.IOException");
+        assertFalse( subclasses.isEmpty() );
+        assertNotNull( Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) );
+        
+        // Now remove
+        new AllKnownSubclassesQuery().inject(db).removeLibrary(libraryId);
+        
+        // Verify it's gone
+        subclasses = new AllKnownSubclassesQuery().inject(db).query("java.io.IOException");
+        assertNull( Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) );
+    }
 
 }
 

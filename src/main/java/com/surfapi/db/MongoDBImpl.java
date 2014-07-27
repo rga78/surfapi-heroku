@@ -28,6 +28,9 @@ public class MongoDBImpl implements DB {
     
     private com.mongodb.DB mongoDB;
     
+    private String dbUri;
+    
+    
     /**
      * CTOR.
      */
@@ -54,10 +57,10 @@ public class MongoDBImpl implements DB {
      */
     protected com.mongodb.DB connect(String dbName) throws UnknownHostException {
         
-        String uri = getMongoUri(dbName);
-        Log.info(this, "connect: URI: " + uri);
+        dbUri = getMongoUri(dbName);
+        Log.info(this, "connect: URI: " + dbUri);
             
-        MongoClientURI mongoUri  = new MongoClientURI(uri); 
+        MongoClientURI mongoUri  = new MongoClientURI(dbUri); 
         return new MongoClient(mongoUri).getDB(mongoUri.getDatabase());
     }
     
@@ -66,6 +69,14 @@ public class MongoDBImpl implements DB {
      */
     public com.mongodb.DB getMongoDB() {
         return mongoDB;
+    }
+    
+    /**
+     * @return the uri of the mongo db.
+     */
+    @Override
+    public String getName() {
+        return dbUri;
     }
     
     /**
@@ -110,13 +121,22 @@ public class MongoDBImpl implements DB {
     @Override
     public void forAll(Collection<String> collections, ForAll callback) {
         for (String collectionName : collections ) {
-            Log.info(this, "forAll: collection: " + collectionName);
-            DBCursor dbCursor = mongoDB.getCollection(collectionName).find();
-            for (DBObject dbobj : dbCursor) {
-                callback.call( this, collectionName, dbobj.toMap() );
-            }
-            dbCursor.close();
+            forAll(collectionName, callback);
         }
+    }
+    
+    /**
+     * Run callback against all documents in the given collection.
+     */
+    @Override
+    public void forAll(String collectionName, ForAll callback) {
+
+        Log.info(this, "forAll: collection: " + collectionName);
+        DBCursor dbCursor = mongoDB.getCollection(collectionName).find();
+        for (DBObject dbobj : dbCursor) {
+            callback.call( this, collectionName, dbobj.toMap() );
+        }
+        dbCursor.close();
     }
 
     /**

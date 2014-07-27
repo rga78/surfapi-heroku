@@ -1,4 +1,4 @@
-<div>
+<div ng-controller="NavLibraryController">
     <div ng-if="libraryModel">
 
         <h4 class="text-right overflow-hidden">
@@ -11,7 +11,7 @@
                 <div class="input-group">
                     <input type="text" 
                            class="form-control" 
-                           placeholder="Class or package name..." 
+                           placeholder="Search this library..." 
                            ng-model="str" 
                            ng-trim="false"
                            ng-change="onChange()" 

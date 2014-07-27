@@ -301,7 +301,54 @@ public class AutoCompleteIndexTest {
         docs = new AutoCompleteIndex().inject(db).query( libraryId, "Cawls", 25 );
         assertTrue( docs.isEmpty() );
     }
- 
+    
+    /**
+     * 
+     */
+    @Test
+    public void testAddAndRemoveLibrary() throws Exception {
+        
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
+        // add the library first
+        String libraryId = "/java/com.surfapi.junit/1.0";
+        
+        File baseDir = new File("src/test/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.junit" ) )
+               .run();
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        // Add library to the index
+        new AutoCompleteIndex().inject(db).addLibraryToIndex(libraryId);
+        
+        // Verify it's there in the lang index
+        List<Map> docs = new AutoCompleteIndex().inject(db).query( "java", "CaptureSystemOut", 25 );
+        assertFalse( docs.isEmpty() );
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "CaptureSystemOutRule" ) ) );
+        
+        // Verify the library-specific index 
+        docs = new AutoCompleteIndex().inject(db).query( libraryId, "CaptureSystemOut", 25 );
+        assertFalse( docs.isEmpty() );
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "name", "CaptureSystemOutRule" ) ) );
+        
+        // Now remove
+        new AutoCompleteIndex().inject(db).removeLibrary(libraryId);
+        
+        // Verify it's gone
+        docs = new AutoCompleteIndex().inject(db).query( "java", "CaptureSystemOut", 25 );
+        assertTrue( docs.isEmpty() );
+        
+        docs = new AutoCompleteIndex().inject(db).query( libraryId, "CaptureSystemOut", 25 );
+        assertTrue( docs.isEmpty() );
+        
+        assertFalse( db.getMongoDB().collectionExists( AutoCompleteIndex.buildAutoCompleteIndexName(libraryId)) );
+    }
 
     
 }

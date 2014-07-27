@@ -7,9 +7,9 @@ import java.util.Map;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.json.simple.JSONObject;
 
 import com.surfapi.coll.Cawls;
+import com.surfapi.coll.MapBuilder;
 
 /**
  * 
@@ -53,17 +53,13 @@ public class JavadocMapUtils {
      * @return a Mapping of the given libraryId, with fields for lang, name, and version
      *         e.g. "/java/java-sdk/1.6" maps to: { _id: ""/java/java-sdk/1.6", lang: "java", name: "java-sdk", version: "1.6" }
      */
-    public static Map mapLibraryId(String libraryId) {
+    public static Map<String, String> mapLibraryId(String libraryId) {
         String[] lib = StringUtils.split(libraryId, "/");
         
-        JSONObject retMe = new JSONObject();
-        
-        retMe.put("_id", libraryId);
-        retMe.put("lang", lib[0]);
-        retMe.put("name", lib[1]);
-        retMe.put("version", lib[2]);
-        
-        return retMe;
+        return new MapBuilder<String, String>().append("_id", libraryId)
+                                               .append("lang", lib[0])
+                                               .append("name", lib[1])
+                                               .append("version", lib[2]); 
     }
 
     

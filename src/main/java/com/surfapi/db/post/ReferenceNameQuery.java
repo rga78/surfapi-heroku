@@ -36,6 +36,10 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
      *
      */
     public static String CollectionName = "/q/java/qn";
+    
+    protected String getCollectionName() {
+        return CollectionName;
+    }
 
     /**
      * For each doc, replace the "_id" field with the "id" field.
@@ -117,7 +121,7 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
 
         Log.info( this, "build: building the referenceName index" );
         
-        getDb().drop( ReferenceNameQuery.CollectionName );
+        getDb().drop( getCollectionName() );
         
         getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder() );
         
@@ -130,24 +134,10 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
      * Create the index on the _qn field, if one doesn't already exist.
      */
     protected void ensureIndexedColumns() {
-        getDb().createIndex( ReferenceNameQuery.CollectionName , new MapBuilder().append( "_qn", 1 )
+        getDb().createIndex( getCollectionName() , new MapBuilder().append( "_qn", 1 )
                                                                                  .append("_id", -1) );
     }
     
-    /**
-     * Add the documents from the given libraries to the index.
-     */
-    public ReferenceNameQuery addLibrariesToIndex( List<String> libraryIds ) {
-
-        Log.info( this, "addLibrariesToIndex: " + libraryIds);
-        
-        getDb().forAll( libraryIds , new IndexBuilder() );
-
-        ensureIndexedColumns();
-        
-        return this;
-    }
-
     /**
      * Add the documents from the given library to the index.
      */
@@ -159,11 +149,26 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
         
         return this;
     }
+    
+    /**
+     * Remove the given library from the index.  
+     * 
+     * That is, remove all entries associated with this library.
+     */
+    public ReferenceNameQuery removeLibrary( String libraryId ) {
+
+        Log.info( this, "removeLibrary: " + libraryId);
+             
+        getDb().remove( getCollectionName(), new MapBuilder<String, String>()
+                                                      .append( JavadocMapUtils.LibraryFieldName + "._id", libraryId) );
+        
+        return this;
+    }
 
     /**
      * Builds the index.
      */
-    protected static class IndexBuilder implements DB.ForAll {
+    protected class IndexBuilder implements DB.ForAll {
 
         /**
          *
@@ -171,7 +176,7 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
         @Override
         public void call(DB db, String collection, Map doc) {
             for (Map refDoc : buildReferenceDocs(doc)) {
-                db.save( ReferenceNameQuery.CollectionName , refDoc );
+                db.save( getCollectionName() , refDoc );
             }
         }
         

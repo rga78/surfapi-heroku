@@ -60,12 +60,19 @@ public class DBImpl extends ConcurrentHashMap<String, Map<String, Map>> implemen
     @Override
     public void forAll(Collection<String> collections, ForAll callback) {
         for ( String collectionName : collections) {
-            Map<String, Map> collection = get(collectionName);
-            for (Map obj : collection.values()) {
-                callback.call(this, collectionName, obj);
-            }
+            forAll(collectionName, callback);
         }
     }
+    
+
+    @Override
+    public void forAll(String collectionName, ForAll callback) {
+        Map<String, Map> collection = get(collectionName);
+        for (Map obj : collection.values()) {
+            callback.call(this, collectionName, obj);
+        }
+    }
+
 
     /**
      * 
@@ -197,6 +204,11 @@ public class DBImpl extends ConcurrentHashMap<String, Map<String, Map>> implemen
            save(collection, doc);
        }
         
+    }
+
+    @Override
+    public String getName() {
+        return "Map-based-db-for-testing";
     }
 
 

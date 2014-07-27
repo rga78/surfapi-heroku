@@ -3,7 +3,7 @@ package com.surfapi.main.tasks;
 import com.surfapi.main.Task;
 import com.surfapi.main.TaskList;
 
-public class HelpTask implements Task {
+public class HelpTask extends Task<HelpTask> {
     
     /**
      * List of registered tasks.
@@ -41,8 +41,7 @@ public class HelpTask implements Task {
 
     @Override
     public String getTaskDescription() {
-        // TODO Auto-generated method stub
-        return null;
+        return "Print help and usage for tasks";
     }
 
     @Override

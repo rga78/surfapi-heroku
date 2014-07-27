@@ -3,6 +3,7 @@ package com.surfapi.db.post;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -180,21 +181,21 @@ public class ReferenceNameQueryTest {
                                            .append("containingClass", classModel);
 
         assertEquals(new SetBuilder<String>().append("com.surfapi.test"),
-                   new ReferenceNameQuery.IndexBuilder().getReferenceNames( packageModel ) );
+                   new ReferenceNameQuery().new IndexBuilder().getReferenceNames( packageModel ) );
         
         assertEquals(new SetBuilder<String>().append("com.surfapi.test.DemoJavadoc"),
-                   new ReferenceNameQuery.IndexBuilder().getReferenceNames( classModel ) );
+                   new ReferenceNameQuery().new IndexBuilder().getReferenceNames( classModel ) );
         
-        Log.trace(this, new ReferenceNameQuery.IndexBuilder().getReferenceNames( methodModel ) );
+        Log.trace(this, new ReferenceNameQuery().new IndexBuilder().getReferenceNames( methodModel ) );
         
         assertEquals(new SetBuilder<String>().appendAll("com.surfapi.test.DemoJavadoc+parse",
                                                         "com.surfapi.test.DemoJavadoc+parse(java.net.URL,java.lang.String[])",
                                                         "com.surfapi.test.DemoJavadoc+parse(URL,String[])"),
-                     new ReferenceNameQuery.IndexBuilder().getReferenceNames( methodModel ) );
+                     new ReferenceNameQuery().new IndexBuilder().getReferenceNames( methodModel ) );
 
         assertEquals(new SetBuilder<String>().appendAll("com.surfapi.test.DemoJavadoc+DemoJavadoc",
                                                         "com.surfapi.test.DemoJavadoc+DemoJavadoc()"),
-                     new ReferenceNameQuery.IndexBuilder().getReferenceNames( ctorModel ) ) ;
+                     new ReferenceNameQuery().new IndexBuilder().getReferenceNames( ctorModel ) ) ;
     }
     
     
@@ -285,6 +286,44 @@ public class ReferenceNameQueryTest {
         assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "_id", "/java/com.surfapi/1.0/com.surfapi.test.DemoJavadoc") ) );
 
         
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testAddAndRemoveLibrary() throws Exception {
+        
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
+        // add the library first
+        String libraryId = "/java/com.surfapi.proc/1.0";
+        
+        File baseDir = new File("src/main/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        // Add library to the index
+        new ReferenceNameQuery().inject(db).addLibraryToIndex(libraryId);
+        
+        // Verify it's there 
+        List<Map> docs = new ReferenceNameQuery().inject(db).query("com.surfapi.proc.ProcessException");
+        assertFalse( docs.isEmpty() );
+        assertNotNull( Cawls.findFirst( docs, new MapBuilder().append( "_id", libraryId + "/com.surfapi.proc.ProcessException") ) );
+        
+        // Now remove
+        new ReferenceNameQuery().inject(db).removeLibrary(libraryId);
+        
+        // Verify it's gone
+        docs = new ReferenceNameQuery().inject(db).query("com.surfapi.proc.ProcessException");
+        assertNull( Cawls.findFirst( docs, new MapBuilder().append( "_id", libraryId + "/com.surfapi.proc.ProcessException") ) );
     }
         
 }

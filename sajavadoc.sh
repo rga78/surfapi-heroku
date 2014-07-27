@@ -18,8 +18,8 @@ shift
 # run javadoc
 ./mongodoclet.sh $MONGOLAB_URI $MONGO_LIBRARYID $*
 
-# run post-processor (for building indexes)
-./runJavadoc.sh $MONGOLAB_URI PostProcessorMain buildIndex --libraryId=$MONGO_LIBRARYID
+# add library to indexes
+./surfapi.sh $MONGOLAB_URI buildIndex --libraryId=$MONGO_LIBRARYID
 
 
 

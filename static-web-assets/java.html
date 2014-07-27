@@ -37,8 +37,7 @@
     <script src="js/bootstrap.min.js"></script>
 
     <!-- Nav path bar -->
-    <div class="vertical-spacer" ng-include="'partials/nav-path-bar.html'"></div>
-
+    <div class="nav-path-bar" ng-include="'partials/nav-path-bar.html'"></div>
 
     <!-- Primary content -->
     <div class="container-fluid">
@@ -46,10 +45,12 @@
         <div class="row">
 
             <!-- Left panel library/package list -->
-            <div class="col-lg-2 padding-horizontal-lite" ng-controller="NavLibraryController" ng-include="'partials/nav-library.html'"></div>
+            <div class="col-lg-2 padding-lite">
+                <div ng-include="'partials/nav-library.html'"></div>
+            </div>
 
             <!-- Main panel -->
-            <div class="col-lg-10 padding-horizontal border-left">
+            <div class="col-lg-10 padding border-left-thick">
 
                 <div ng-controller="JavadocController">
 
@@ -86,75 +87,74 @@
                     <!-- Class elements -->
                     <div ng-hide="requestPending" ng-if="isClass(javadocModel)">
                 
-                        <!-- superclasses -->
-                        <div ng-if="!isEmpty(javadocModel.allSuperclassTypes)">
-                            <h4>Extends</h4>
-                            <ul>
-                                <li class="comma-separated-list">
-                                    <span class="list-item code" ng-repeat="superclassDoc in javadocModel.allSuperclassTypes">
-                                        <sa-type doc="superclassDoc"></sa-type
-                                    ></span>
-                                </li>
-                            </ul>
-                        </div>
-                
-                        <!-- interfaces -->
-                        <!-- Note: don't show for interfaces (already showed under superclasses) -->
-                        <div ng-if="!isEmpty(javadocModel.allInterfaceTypes) && !isInterface(javadocModel)">
-                            <h4>Implements</h4>
-                            <ul>
-                                <li class="comma-separated-list">
-                                    <span class="list-item code" ng-repeat="interfaceDoc in javadocModel.allInterfaceTypes">
-                                        <sa-type doc="interfaceDoc"></sa-type
-                                    ></span>
-                                </li>
-                            </ul>
-                        </div>
-                
-                        <!-- Type parameters -->
-                        <div ng-if="javadocModel.typeParamTags">
-                            <h4>Type Parameters</h4>
-                            <ul> 
-                                <li ng-repeat="typeParamTag in javadocModel.typeParamTags">
-                                    <span class="code">&lt;{{typeParamTag.parameterName}}&gt;</span>
-                                    <span class="padding-lite" ng-bind-html="typeParamTag.parameterComment | formatTags:javadocModel"></span>
-                                </li>
-                            </ul>
-                        </div>
-                
-                        <!-- All known subclasses -->
-                        <div ng-controller="AllKnownSubclassesController">
-                                <h4>All Known Subclasses</h4>
+                        <div class="tab-body">
+                            <!-- superclasses -->
+                            <div ng-if="!isEmpty(javadocModel.allSuperclassTypes)">
+                                <h4>Extends</h4>
                                 <ul>
-                                    <li ng-if="none">
-                                        None
-                                    </li>
                                     <li class="comma-separated-list">
-                                        <span class="list-item code" ng-repeat="scDoc in allKnownSubclasses">
-                                            <sa-type doc="scDoc"></sa-type
+                                        <span class="list-item code" ng-repeat="superclassDoc in javadocModel.allSuperclassTypes">
+                                            <sa-type doc="superclassDoc"></sa-type
                                         ></span>
                                     </li>
                                 </ul>
-                        </div>
-
-                        <!-- All known implementors -->
-                        <div ng-if="isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
-                                <h4>All Known Implementors</h4>
+                            </div>
+                
+                            <!-- interfaces -->
+                            <!-- Note: don't show for interfaces (already showed under superclasses) -->
+                            <div ng-if="!isEmpty(javadocModel.allInterfaceTypes) && !isInterface(javadocModel)">
+                                <h4>Implements</h4>
                                 <ul>
-                                    <li ng-if="none">
-                                        None
-                                    </li>
                                     <li class="comma-separated-list">
-                                        <span class="list-item code" ng-repeat="implDoc in allKnownImplementors">
-                                            <sa-type doc="implDoc"></sa-type
+                                        <span class="list-item code" ng-repeat="interfaceDoc in javadocModel.allInterfaceTypes">
+                                            <sa-type doc="interfaceDoc"></sa-type
                                         ></span>
                                     </li>
                                 </ul>
+                            </div>
+                
+                            <!-- Type parameters -->
+                            <div ng-if="javadocModel.typeParamTags">
+                                <h4>Type Parameters</h4>
+                                <ul> 
+                                    <li ng-repeat="typeParamTag in javadocModel.typeParamTags">
+                                        <span class="code">&lt;{{typeParamTag.parameterName}}&gt;</span>
+                                        <span class="padding-lite" ng-bind-html="typeParamTag.parameterComment | formatTags:javadocModel"></span>
+                                    </li>
+                                </ul>
+                            </div>
+                
+                            <!-- All known subclasses -->
+                            <div ng-controller="AllKnownSubclassesController">
+                                    <h4>All Known Subclasses</h4>
+                                    <ul>
+                                        <li ng-if="none">
+                                            None
+                                        </li>
+                                        <li class="comma-separated-list">
+                                            <span class="list-item code" ng-repeat="scDoc in allKnownSubclasses">
+                                                <sa-type doc="scDoc"></sa-type
+                                            ></span>
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <!-- All known implementors -->
+                            <div ng-if="isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
+                                    <h4>All Known Implementors</h4>
+                                    <ul>
+                                        <li ng-if="none">
+                                            None
+                                        </li>
+                                        <li class="comma-separated-list">
+                                            <span class="list-item code" ng-repeat="implDoc in allKnownImplementors">
+                                                <sa-type doc="implDoc"></sa-type
+                                            ></span>
+                                        </li>
+                                    </ul>
+                            </div>
                         </div>
 
-
-
-                        <hr />
                 
                         <!-- Main description -->
                         <div class="padding-vertical-lite">

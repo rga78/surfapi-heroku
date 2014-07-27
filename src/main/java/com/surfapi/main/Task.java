@@ -1,7 +1,29 @@
 package com.surfapi.main;
 
-public interface Task {
+import com.surfapi.db.DB;
 
+public abstract class Task<T extends Task> {
+    
+    /**
+     * Injected REF to DB.
+     */
+    private DB db;
+    
+    /**
+     * inject DB.
+     */
+    public T inject(DB db) {
+        this.db = db;
+        return (T) this;
+    }
+
+    /**
+     * @return the injected db
+     */
+    protected DB getDb() {
+        return db;
+    }
+    
     /**
      * Answers the name of the task, which should be as succinct as possible.
      * The task name is used in help display and is how the task is invoked
@@ -9,7 +31,7 @@ public interface Task {
      * 
      * @return the name of the task
      */
-    String getTaskName();
+    public abstract String getTaskName();
 
     /**
      * Answers the help message for the task, which is used by the script
@@ -19,7 +41,7 @@ public interface Task {
      * 
      * @return the help message for the task
      */
-    String getTaskHelp();
+    public abstract String getTaskHelp();
 
     /**
      * Answer the description of of the task, which will be used in help display
@@ -27,7 +49,7 @@ public interface Task {
      * 
      * @return the description of the task
      */
-    String getTaskDescription();
+    public abstract String getTaskDescription();
 
     /**
      * Perform the task logic.
@@ -38,5 +60,5 @@ public interface Task {
      * 
      * @throws IllegalArgumentException if the task was called with invalid arguments
      */
-    int handleTask(String[] args) throws Exception;
+    public abstract int handleTask(String[] args) throws Exception;
 }
