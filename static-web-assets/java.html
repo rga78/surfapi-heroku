@@ -25,6 +25,8 @@
     </div>
     
     <!-- Load scripts after the header has been rendered to improve the perceived loading time. -->
+    <!-- Normally you'd load scripts at the bottom of the html document.  But that's causing the -->
+    <!-- unresolved interpolations to show up in the rendered html until angular is loaded. -->
     <script src="js/angular.js"></script>
     <script src="js/angular-route.js"></script>
     <script src="js/angular-sanitize.min.js"></script>
@@ -61,11 +63,11 @@
                     </div>
                 
                     <!-- Class/Interface/Enum/AnnotationType view -->
-                    <div ng-hide="requestPending" ng-if="isClass(javadocModel) || isClassElement(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel) || JavadocModelUtils.isClassElement(javadocModel)">
                         <!-- Annotations on the class, if any -->
                         <ul class="padding-none" ng-if="!isEmpty(javadocModel.annotations)" >
                              <li class="padding-none" ng-repeat="annotation in javadocModel.annotations">
-                                 <span class="code" ng-bind-html="formatAnnotation(annotation)"></span>
+                                 <span class="code" ng-bind-html="Formatter.formatAnnotation(annotation)"></span>
                              </li>
                         </ul>
                 
@@ -76,16 +78,16 @@
                             <span ng-if="javadocModel.metaType=='annotationType'">@interface</span>
                         </span>
 
-                        <h1 ng-if="!isClassElement(javadocModel)" class="model-title">{{ javadocModel.qualifiedName }}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small></h1>  
+                        <h1 ng-if="!JavadocModelUtils.isClassElement(javadocModel)" class="model-title">{{ javadocModel.qualifiedName }}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small></h1>  
 
-                        <h1 ng-if="isClassElement(javadocModel)" class="model-title" >
+                        <h1 ng-if="JavadocModelUtils.isClassElement(javadocModel)" class="model-title" >
                             <a href="#{{javadocModel.containingClass._id}}">{{ javadocModel.containingClass.qualifiedName }}</a>.{{javadocModel.name}}{{javadocModel.flatSignature}}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small>
                             <hr />
                         </h1>  
                     </div>
 
                     <!-- Class elements -->
-                    <div ng-hide="requestPending" ng-if="isClass(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel)">
                 
                         <div class="tab-body">
                             <!-- superclasses -->
@@ -102,7 +104,7 @@
                 
                             <!-- interfaces -->
                             <!-- Note: don't show for interfaces (already showed under superclasses) -->
-                            <div ng-if="!isEmpty(javadocModel.allInterfaceTypes) && !isInterface(javadocModel)">
+                            <div ng-if="!isEmpty(javadocModel.allInterfaceTypes) && !JavadocModelUtils.isInterface(javadocModel)">
                                 <h4>Implements</h4>
                                 <ul>
                                     <li class="comma-separated-list">
@@ -140,7 +142,7 @@
                             </div>
 
                             <!-- All known implementors -->
-                            <div ng-if="isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
+                            <div ng-if="JavadocModelUtils.isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
                                     <h4>All Known Implementors</h4>
                                     <ul>
                                         <li ng-if="none">
@@ -161,10 +163,10 @@
                             <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel"></div>
                 
                             <!-- block tags -->
-                            <div ng-if="!isEmpty(getUnformattedTags(javadocModel.tags))">
+                            <div ng-if="!isEmpty(JavadocModelUtils.getUnformattedTags(javadocModel.tags))">
                                 <h4>Block Tags</h4>
                                 <ul>
-                                    <li ng-repeat="tag in getUnformattedTags(javadocModel.tags)"><b>{{tag.name}}</b> {{tag.text}}</li>
+                                    <li ng-repeat="tag in JavadocModelUtils.getUnformattedTags(javadocModel.tags)"><b>{{tag.name}}</b> {{tag.text}}</li>
                                 </ul>
                             </div>
 
@@ -172,7 +174,7 @@
                             <div ng-if="!isEmpty(javadocModel.seeTags)">
                                 <h4>See Also</h4>
                                 <ul>
-                                    <li ng-repeat="seeTag in javadocModel.seeTags" ng-bind-html="formatSeeTag(seeTag, javadocModel)"></li>
+                                    <li ng-repeat="seeTag in javadocModel.seeTags" ng-bind-html="Formatter.formatSeeTag(seeTag, javadocModel)"></li>
                                 </ul>
                             </div>
 
@@ -247,7 +249,7 @@
                     </div>
 
                     <!-- Package view -->
-                    <div ng-hide="requestPending" ng-if="isPackage(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isPackage(javadocModel)">
                         <span class="code">{{javadocModel.metaType}}</span>
                         <h1 style="margin-top:0" ng-bind="javadocModel.name"></h1>
                         <hr />
@@ -352,7 +354,7 @@
                     </div>
 
                     <!-- Library view -->
-                    <div ng-hide="requestPending" ng-if="isLibrary(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLibrary(javadocModel)">
                         <span class="code">{{javadocModel.lang}}</span>
                         <br />
                         <span class="h1">{{javadocModel.name}} {{javadocModel.version}}</span>
@@ -376,7 +378,7 @@
                     </div>
 
                     <!-- Library Versions view -->
-                    <div ng-hide="requestPending" ng-if="isLibraryVersions(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLibraryVersions(javadocModel)">
                         <h1>{{javadocModel.name}}</h1>  
                     
                         <div class="vertical-spacer">&nbsp;</div>
@@ -393,7 +395,7 @@
                     </div>
 
                     <!-- Lang view -->
-                    <div ng-hide="requestPending" ng-if="isLang(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLang(javadocModel)">
                         <h1 ng-bind="javadocModel.name"></h1>
                     
                         <div class="vertical-spacer">&nbsp;</div>
@@ -410,7 +412,7 @@
                     </div>
 
                     <!-- Method/Field/Enum view -->
-                    <div ng-hide="requestPending" ng-if="isClassElement(javadocModel)">
+                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClassElement(javadocModel)">
                         <div ng-switch on="javadocModel.metaType">
                             <div ng-switch-when="method">
                                 <div ng-include=" 'partials/model-method-view.html' "></div>
@@ -428,7 +430,7 @@
                     </div>
 
 
-                    <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" -->
+                    <pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" >
 
                 </div>
             </div>

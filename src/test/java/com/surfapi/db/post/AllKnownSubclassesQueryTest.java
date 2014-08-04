@@ -169,6 +169,98 @@ public class AllKnownSubclassesQueryTest {
         assertNull( Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) );
     }
 
+    
+    /**
+     * 
+     */
+    @Test
+    public void testRemoveLibraryMultipleVersions() throws Exception {
+        
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        // add the library first
+        String libraryId1 = "/java/com.surfapi.proc/1.0";
+        String libraryId2 = "/java/com.surfapi.proc/2.0";
+        
+        File baseDir = new File("src/main/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId1 )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId2 )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+
+
+        
+        // Add library to the index
+        new AllKnownSubclassesQuery().inject(db).addLibraryToIndex(libraryId1);
+        new AllKnownSubclassesQuery().inject(db).addLibraryToIndex(libraryId2);
+        
+        
+        // Verify it's there 
+        {
+            List<Map> subclasses = new AllKnownSubclassesQuery().inject(db).query("java.io.IOException");
+            assertFalse( subclasses.isEmpty() );
+            Map subclass =  Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) ;
+            assertNotNull( subclass );
+            List<String> libraryVersions = (List<String>) subclass.get("_libraryVersions");
+            assertNotNull( libraryVersions );
+            assertEquals( 2, libraryVersions.size() );
+            assertTrue( libraryVersions.contains( "1.0") );
+            assertTrue( libraryVersions.contains( "2.0") );
+        }
+        
+        // Now remove
+        new AllKnownSubclassesQuery().inject(db).removeLibrary(libraryId1);
+        
+        // Verify it's STILL there, only with the library version removed.
+        {
+            List<Map> subclasses = new AllKnownSubclassesQuery().inject(db).query("java.io.IOException");
+            assertFalse( subclasses.isEmpty() );
+            Map subclass =  Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) ;
+            assertNotNull( subclass );
+            List<String> libraryVersions = (List<String>) subclass.get("_libraryVersions");
+            assertNotNull( libraryVersions );
+            assertEquals( 1, libraryVersions.size() );
+            assertTrue( libraryVersions.contains( "2.0") );
+        }
+        
+        // TODO: test removing libraryId1 again (need a contains clause)
+        /// This should have no effect...
+        new AllKnownSubclassesQuery().inject(db).removeLibrary(libraryId1);
+        
+        // Verify it's STILL there
+        {
+            List<Map> subclasses = new AllKnownSubclassesQuery().inject(db).query("java.io.IOException");
+            assertFalse( subclasses.isEmpty() );
+            Map subclass =  Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) ;
+            assertNotNull( subclass );
+            List<String> libraryVersions = (List<String>) subclass.get("_libraryVersions");
+            assertNotNull( libraryVersions );
+            assertEquals( 1, libraryVersions.size() );
+            assertTrue( libraryVersions.contains( "2.0") );
+        }
+        
+        // And remove again
+        new AllKnownSubclassesQuery().inject(db).removeLibrary(libraryId2);
+        
+        // Verify it's gone
+        {
+            List<Map> subclasses = new AllKnownSubclassesQuery().inject(db).query("java.io.IOException");
+            assertNull( Cawls.findFirst( subclasses, new MapBuilder().append( "name", "ProcessException" ) ) );
+        }
+    }
+
 }
 
 

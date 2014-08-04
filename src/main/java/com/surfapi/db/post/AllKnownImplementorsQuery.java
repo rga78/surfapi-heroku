@@ -7,14 +7,19 @@ import java.util.List;
 import java.util.Map;
 
 import com.surfapi.app.JavadocMapUtils;
+import com.surfapi.app.LibraryUtils;
 import com.surfapi.coll.Cawls;
+import com.surfapi.coll.ListBuilder;
 import com.surfapi.coll.MapBuilder;
+import com.surfapi.db.BulkWriter;
 import com.surfapi.db.DB;
+import com.surfapi.db.MongoDBImpl;
 import com.surfapi.log.Log;
 
 /**
  * Populate the "allKnownImplementors" index from interface-name to the classes that implement them.
  *
+ * TODO: This and AllKnownSubclassesQuery are almost identical.  Refactor out the pattern.
  */
 public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQuery> {
 
@@ -79,19 +84,34 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
         
         Map<String, String> library =  JavadocMapUtils.mapLibraryId(libraryId);
         
-        // Note: If this library has multiple versions then we must make sure not to 
-        // delete the entries associated with other versions.  If there's only
-        // 1 version, then we're ok.
-        // TODO: handle libraries with multiple versions
-        if (getDb().getLibraryVersions( library.get("lang"), library.get("name") ).size() == 1) {
-            
-            // TODO: probably should be filtering on lang too.
-            getDb().remove( getCollectionName(), new MapBuilder<String, String>()
-                                                      .append( JavadocMapUtils.LibraryFieldName + ".name", library.get("name")) );
-        }
+        getDb().remove( getCollectionName(), new MapBuilder()
+                                                    .append( "_id", buildIdsForLibraryCriteria( library ) )
+                                                    .append( "_libraryVersions", new ListBuilder<String>().append( library.get("version") ) ) );
+
+        return removeLibraryFromExistingEntries(library);   
+    }
+    
+    /**
+     * Update the _libraryVersions field in all entries that match the given library (sans version)
+     * and remove the given library.
+     * 
+     */
+    protected AllKnownImplementorsQuery removeLibraryFromExistingEntries(Map library) {
         
+        getDb().update( getCollectionName(), 
+                        new MapBuilder().append( "_id", buildIdsForLibraryCriteria( library ) ),
+                        new MapBuilder().append( "$pull", new MapBuilder().append( "_libraryVersions", library.get("version") ) ) );
+       
         return this;
     }
+
+    /**
+     * @return the criteria for matching the _id field to the given library
+     */
+    protected Map buildIdsForLibraryCriteria(Map libraryModel) {
+        return new MapBuilder().append( "$regex", "^" + LibraryUtils.getIdSansVersion(libraryModel) + ".*");
+    }
+    
     
     
     /**
@@ -105,15 +125,28 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
     
     private class IndexBuilder implements DB.ForAll {
         
+       private BulkWriter bulkWriter;
+        
+       @Override
+       public void before(DB db, String collection) {
+           bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName());
+                                // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
+       }
+        
        @Override
        public void call(DB db, String collection, Map javadocModel) {
            insert(javadocModel);
        }
  
+       @Override 
+       public void after(DB db, String collection) {
+           bulkWriter.flush();
+       }
 
        public void insert(Map javadocModel) {
            if (JavadocMapUtils.isClass(javadocModel)) {
-               getDb().save( getCollectionName(), buildDocuments(javadocModel) );
+               // getDb().save( getCollectionName(), buildDocuments(javadocModel) );
+               bulkWriter.insert( buildDocuments(javadocModel) );
            }
        }
 
@@ -142,11 +175,36 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
            List<Map> retMe = new ArrayList<Map>();
 
            for (Map intf : getInterfaces(javadocModel)) {
-               retMe.add( buildDocument( javadocModel, intf) );
+               retMe.add( versionedDocument( buildDocument( javadocModel, intf) ) );
            }
 
            return retMe;
        }
+       
+       /**
+        * Create a "versioned" instance of the given document.  Lookup the indexedDocument
+        * in the query first.  If there's an existingDocuemnt (probably due to another version
+        * of the library), then pull out its "libraryVersions" field, which is a Set of 
+        * versions.  Put the current library version in the set and then put it in the
+        * "versioned" indexedDocument.
+        * 
+        * @return a "versioned" form of the given indexedDocument
+        */
+       protected Map versionedDocument( Map indexedDocument ) {
+           
+           Map existingDocument = getDb().read( getCollectionName(), (String) indexedDocument.get("_id"));
+           
+           List<String> libraryVersions = (existingDocument != null) 
+                                           ? (List<String>) existingDocument.get("_libraryVersions")
+                                           : new ArrayList<String>();
+                                           
+           libraryVersions.add( JavadocMapUtils.getLibraryVersion(indexedDocument) );
+           
+           indexedDocument.put("_libraryVersions", libraryVersions);
+           
+           return indexedDocument;
+       }
+
 
        /**
         * The given javadocModel is an implementor of the given interface.  Create
@@ -159,13 +217,23 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
            Map retMe = JavadocMapUtils.buildTypeStub(javadocModel);
 
            // The _id field is constructed without library version such that only 1 version of the entry exists
-           retMe.put( "_id", JavadocMapUtils.getQualifiedName(intf) 
-                             + JavadocMapUtils.getIdSansVersion( javadocModel ) );
+           retMe.put( "_id", buildDocumentId(javadocModel, intf) );
            
            retMe.put( "_interface", JavadocMapUtils.getQualifiedName(intf) );
            retMe.put( JavadocMapUtils.LibraryFieldName, javadocModel.get( JavadocMapUtils.LibraryFieldName) );
 
            return retMe;
+       }
+       
+       /**
+        * The _id field is constructed without library version such that only 1 version of the entry exists
+        *         *
+        * @return the _id field for the indexed document.
+        */
+       protected String buildDocumentId(Map javadocModel, Map intf) {
+           return JavadocMapUtils.getIdSansVersion( javadocModel )
+                           + JavadocMapUtils.getQualifiedName(intf); 
+         
        }
     }
     

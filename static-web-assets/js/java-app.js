@@ -13,6 +13,14 @@ angular.module( "JavaApp", ['ngRoute',
 
 /**
  * TODO: change this to a  "/q/*" rest target
+ *
+ * TODO: I should use factory() instead of service().  The only difference between the
+ * two is that the thing returned from service will be "new'ed" up, i.e new <retVal>().
+ * 'new' sets up prototype inheritance and sets the contstructor property
+ * (see http://pivotallabs.com/javascript-constructors-prototypes-and-the-new-keyword/),
+ * but other than that there's no need for it.  The thing returned from factory will
+ * just be returned (no 'new'), which is fine for my purposes.  I.e factory is simpler.
+ * Doesn't use new.  If you don't need new, use factory.
  */
 .service("AutoCompleteService", function($http) {
 
@@ -36,9 +44,11 @@ angular.module( "JavaApp", ['ngRoute',
                                $rootScope, 
                                Log) {
 
+    var _this = this;
     this.logging = { prefix: "DbService" };
 
     var onSuccess = function(data) {
+        Log.log(_this, "onSuccess: ");
         $rootScope.$emit( "$saJavadocModelChange", data );
     }
 
@@ -87,6 +97,7 @@ angular.module( "JavaApp", ['ngRoute',
                                Log) {
 
     var isEmpty = Utils.isEmpty;
+    var _this = this;
 
     var formatTypeArguments = function(typeArguments) {
         return (isEmpty(typeArguments)) ? "" :  "&lt;" + ( _.map(typeArguments, formatType).join(", ") ) + "&gt;";
@@ -95,7 +106,7 @@ angular.module( "JavaApp", ['ngRoute',
     var formatTypeName = function(type) {
         return (JavadocModelUtils.isMethod(type)) 
                ? JavadocModelUtils.getQualifiedName(type)
-               : JavadocModelUtils.getName(type) + (type.dimension || "");
+               : JavadocModelUtils.getNameAndDimension(type);
     }
 
     var asAnchor = function(type) {
@@ -103,8 +114,6 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     var asAnchorRef = function(type) {
-        // TODO: getQualifiedName won't work with methods (need to put the '+' in there).  
-        //       But currently methods are never formatted by this code so we're good for now.
         return "<a href='#/q/java/qn/" + JavadocModelUtils.getReferenceName(type) + "'>" + formatTypeName(type) + "</a>" ;
     }
 
@@ -113,7 +122,7 @@ angular.module( "JavaApp", ['ngRoute',
 
         if (type._id) {
             retMe += asAnchor(type);
-        } else if (JavadocModelUtils.getName(type) != JavadocModelUtils.getQualifiedName(type)) {
+        } else if ( ! JavadocModelUtils.isPrimitiveType(type)) {
             retMe += asAnchorRef(type); 
         } else {
             retMe += formatTypeName(type);
@@ -281,7 +290,7 @@ angular.module( "JavaApp", ['ngRoute',
 
         var tagText = (m[5] || m[0].replace("#","."));
 
-        Log.log(this, "Formatter.formatLinkplainTag: " + JSON.stringify(tag) + "; ref: " + ref);
+        Log.log(_this, "Formatter.formatLinkplainTag: " + JSON.stringify(tag) + "; ref: " + ref);
 
         return "<a href='#/q/java/qn/" + ref + "'>" + tagText + "</a>";
     };
@@ -337,7 +346,7 @@ angular.module( "JavaApp", ['ngRoute',
                              return arg.trim().split(" ")[0];
                          }).join(",")
                 + ")";
-        Log.log(this, "formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
+        Log.log(_this, "formatLinkTagMethodParms: " + methodParms + " --> " + retMe);
 
         return retMe;
     }
@@ -388,6 +397,7 @@ angular.module( "JavaApp", ['ngRoute',
     // Exported functions.
     this.formatType = formatType;
     this.formatTypeParameters = formatTypeParameters;
+    this.formatTypeParameter = formatTypeParameter;
     this.formatMethodSignature = formatMethodSignature;
     this.formatSeeTag = formatSeeTag;
     this.formatInlineTag = formatInlineTag;
@@ -477,6 +487,10 @@ angular.module( "JavaApp", ['ngRoute',
     var getName = function(model) {
         return (model.name || model.typeName) ;
     }
+    
+    var getNameAndDimension = function(model) {
+        return getName(model) + (model.dimension || "");
+    }
 
     var getQualifiedName = function(model) {
         return (model.qualifiedName || model.qualifiedTypeName || model.name);  // model.name is for packages.
@@ -538,6 +552,18 @@ angular.module( "JavaApp", ['ngRoute',
         return getMetaType(model) == "lang";
     }
 
+    var isPrimitiveType = function(model) {
+        return getName(model) == getQualifiedName(model);
+    }
+
+    var isParameterizedType = function(model) {
+        return ! ( isEmpty(model.parameterizedType) && isEmpty(model.wildcardType) ) ;
+    }
+
+    var isSimpleTypeParameter = function(model) {
+        return isPrimitiveType(model) && isEmpty(model.bounds);
+    }
+
     // Note: assumes model is NOT null
     var getPackageId = function( model ) {
         return ( isPackage(model) ) ? model._id : getId( model.containingPackage );
@@ -584,6 +610,7 @@ angular.module( "JavaApp", ['ngRoute',
     this.getPackageFor = getPackageFor;
     this.getQualifiedName = getQualifiedName;
     this.getName = getName;
+    this.getNameAndDimension = getNameAndDimension;
     this.isMethod = isMethod;
     this.isInterface = isInterface;
     this.isClass = isClass;
@@ -594,6 +621,9 @@ angular.module( "JavaApp", ['ngRoute',
     this.isLang = isLang;
     this.getUnformattedTags = getUnformattedTags;
     this.getReferenceName = getReferenceName;
+    this.isPrimitiveType = isPrimitiveType;
+    this.isParameterizedType = isParameterizedType;
+    this.isSimpleTypeParameter = isSimpleTypeParameter;
 })
 
 
@@ -667,6 +697,14 @@ angular.module( "JavaApp", ['ngRoute',
             }
         });
 
+        // modalInstance.result is a promise that is resolved when the modal
+        // is 'closed' and rejected when the modal is 'dismissed'.
+        //
+        // The first function passed to promise.then() is called when the promise
+        // resolved, the second function when the promise is rejected.  
+        //
+        // Both update the location hash, which will trigger the watch in
+        // JavadocController to update the page.
         modalInstance.result.then( function(selectedModel) {
             $location.hash( selectedModel._id ).replace();
         }, function () {
@@ -857,12 +895,9 @@ angular.module( "JavaApp", ['ngRoute',
 
 
 /**
- * For use with /java/* URIs.
  *
- * Main app controller handles routes.
- *
- * A controller will get new'ed up every time the route updates
- * if the router has 'controller' field set (templateUrl too?)
+ * TODO: use array sytax for specifying dependencies so that the code still works
+ *       after minify-ing (which will likely change the names of the parms).
  */
 .controller( "JavadocController", function($scope, 
                                            $rootScope, 
@@ -878,35 +913,28 @@ angular.module( "JavaApp", ['ngRoute',
 
     var _this = this;
 
-    Log.log(_this, "invoked");
+    // -rx- Log.log(_this, "invoked");
 
     // Listen for hash changes.
     $scope.$watch(function() {
                       return $location.hash();
                   },
                   function(id) {
-                      Log.log(_this, "$watch.callback: hash: " + id);
+                      // -rx- Log.log(_this, "$watch.callback: hash: " + id);
 
                       if ( Utils.isEmpty(id) ) {
                           fetchJavadoc("/java");
                       } else if (id.indexOf("/java") == 0) {
                           fetchJavadoc(id);
                       } else if (id.indexOf("/q/java/qn/") == 0) {
+                          $scope.requestPending = true;
                           ReferenceQueryService.getReferenceType(id);
                       }
                   });
 
     // Export functions to scope.
-    $scope.formatSeeTag = Formatter.formatSeeTag;
-    $scope.formatAnnotation = Formatter.formatAnnotation;
-    $scope.isInterface = JavadocModelUtils.isInterface;
-    $scope.isClass = JavadocModelUtils.isClass;
-    $scope.isClassElement = JavadocModelUtils.isClassElement;
-    $scope.isPackage = JavadocModelUtils.isPackage;
-    $scope.isLibrary = JavadocModelUtils.isLibrary;
-    $scope.isLibraryVersions = JavadocModelUtils.isLibraryVersions;
-    $scope.isLang = JavadocModelUtils.isLang;
-    $scope.getUnformattedTags = JavadocModelUtils.getUnformattedTags;
+    $scope.Formatter = Formatter;
+    $scope.JavadocModelUtils = JavadocModelUtils;
 
     // Export functions to rootScope.
     $rootScope.isEmpty = Utils.isEmpty;
@@ -922,6 +950,7 @@ angular.module( "JavaApp", ['ngRoute',
         scrollTop();
 
         $scope.requestPending = true;
+
         DbService.get( id )
                  .success( function(data) {
                      
@@ -1106,10 +1135,12 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
 
-    // Needed by the view to properly render the method signature
-    $scope.formatMethodSignature = function() {
-        return Formatter.formatMethodSignature( $scope.methodDoc.parameters, $scope.methodDoc.flatSignature );
-    };
+    // -rx- delete this Needed by the view to properly render the method signature
+    // -rx- $scope.formatMethodSignature = function() {
+    // -rx-     return Utils.isEmpty($scope.methodDoc.parameters) 
+    // -rx-                 ? "" 
+    // -rx-                 : Formatter.formatMethodSignature( $scope.methodDoc.parameters, $scope.methodDoc.flatSignature );
+    // -rx- };
 
     // If location.hash matches this doc id (meaning the user specifically looked up this method),
     // then automatically show the full doc section.
@@ -1310,7 +1341,7 @@ angular.module( "JavaApp", ['ngRoute',
 .filter('prettyPrintJson', function() {
 
     return function(model) {
-        return JSON.stringify(model, undefined, 2);
+        return angular.toJson(model, true); // JSON.stringify(model, undefined, 2);
     }
 })
 
@@ -1325,7 +1356,8 @@ angular.module( "JavaApp", ['ngRoute',
 })
 
 /**
- * TODO: i desperately need to learn a front-end/js unit testing framework.
+ * TODO: need more unit tests (just a general reminder... not specific to this filter...)
+ * 
  */
 .filter('formatTags', function(Formatter, _, Utils, JavadocModelUtils) {
 
@@ -1429,30 +1461,204 @@ angular.module( "JavaApp", ['ngRoute',
 /**
  * <sa-type> custom element. 
  *
+ * TODO: types with typeParameters could maybe embed <sa-type-parameter> ?
+ *
  */
-.directive('saType', function($compile, Formatter) {
+.directive('saType', function($compile, Formatter, JavadocModelUtils, Log) {
+    var _this = this;
+    // -rx- this.logging = { prefix: "saType" };
 
-    // -rx- var x = 0, y=0;
+    Log.log(_this, "ctor: ");
 
+    // -rx- var compileFnCount = 0;
+    // -rx- var clonedAttachCount = 0;
+    // -rx- var linkFnCount = 0;
+
+    /**
+     * Pre-compiled template function for primitive types.
+     */
+    var primitiveTypeTemplateFn = $compile("<span>{{nameAndDimension}}</span>");
+
+    /**
+     * Pre-compiled template function for non-parameterized types.
+     */
+    var nonParameterizedTypeTemplateFn = $compile("<span><a href='#/q/java/qn/{{referenceName}}'>{{nameAndDimension}}</a>") ;
+
+    /**
+     * Replace the given element (<sa-type>) with a <span> for primitive types.
+     * The span was pre-compiled to a template function above.  The template function
+     * is called with the given scope to bind the scope to the template (to resolve
+     * interpolations like {{nameAndDimension}} ). It returns a link function which,
+     * when called, returns the DOM element (the *template* element).
+     *
+     * The link function in this case is ignored. Instead, we also pass a "cloned attach 
+     * function" to the template function.  The template function will clone the template
+     * element, bind the clone to the scope, then call the cloned attach function. 
+     * The purpose of the cloned attach function is to attach the cloned element to the
+     * DOM somewhere. In this case we replace the <sa-type> element with the cloned element.
+     *
+     */
+    var linkPrimitiveType = function(scope, element) {
+        // -rx- Log.log(_this, "linkFn: primitive type...");
+        scope.nameAndDimension = JavadocModelUtils.getNameAndDimension(scope.typeDoc);
+        // Why must we use the cloned element?  The element returned from the template
+        // function is always the same element. An element can only exist in the DOM in 
+        // one place, so if we tried to use that element repeatedly it wouldn't work. It
+        // would only show up in the last place we appended it.  So instead, create a clone
+        // of the element and use that.
+        primitiveTypeTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned);
+        });
+    }
+
+    /**
+     * Replace the given element (<sa-type>) with a <span> for non-parameterized types.
+     */
+    var linkNonParameterizedType = function(scope, element) {
+        // -rx- Log.log(_this, "linkFn: non-parameterized type...");
+        scope.nameAndDimension = JavadocModelUtils.getNameAndDimension(scope.typeDoc);
+        scope.referenceName = JavadocModelUtils.getReferenceName(scope.typeDoc);
+        nonParameterizedTypeTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned);
+        });
+    }
+
+    /**
+     * Dynamically generate HTML for parameterized types.  Parameterized
+     * types are too complicated/variable to apply to express with a simple html template.
+     * Instead gen the HTML dynamically based on the type data.  This involves
+     * calling the $compile function, which is expensive (hence the pre-compiled
+     * templates for primitives and non-parameterized types).
+     */
+    var linkParameterizedType = function(scope, element) {
+
+        $compile( "<span>" + Formatter.formatType(scope.typeDoc) + "</span>")(scope, function(cloned, scope) {
+            // Log.log(_this, "linkFn.compile.link.clonedAttach: (" + (++clonedAttachCount) + ") " + JavadocModelUtils.getQualifiedName(scope.typeDoc));
+            element.replaceWith(cloned); 
+        });
+    }
+
+    /**
+     * The directive's link function. 
+     *
+     * This is actually a 'post-link' function, which means the element passed in 
+     * (the <sa-type> element) is already "linked" with the given scope.
+     *
+     * The post-link function gives us an opportunity after linking to make
+     * further updates to the element, for example add DOM listeners or whatever.
+     *
+     * We can also choose to replace the given element entirely if we please, which
+     * in this case, we do.  
+     */
     var linkFn = function (scope, element, attrs) {
-        // console.log("saType.link: " + JSON.stringify( scope.typeDoc, undefined, 2) );
+        // -rx- Log.log(_this, "linkFn: (" + (++linkFnCount) + ") " + (angular.isDefined(scope.typeDoc) ? JavadocModelUtils.getQualifiedName(scope.typeDoc): ""));
 
         if (angular.isDefined( scope.typeDoc ) ) {
-            $compile( "<span>" + Formatter.formatType(scope.typeDoc) + "</span>")(scope, function(cloned, scope) {
-                // console.log("saTypeHelper.compile.link.callback: " + ++x);
-                element.replaceWith(cloned); 
-            });
+
+            if (JavadocModelUtils.isPrimitiveType(scope.typeDoc)) {
+                linkPrimitiveType(scope, element);
+
+            } else if ( ! JavadocModelUtils.isParameterizedType(scope.typeDoc) ) {
+                linkNonParameterizedType(scope, element);
+
+            } else {
+                linkParameterizedType(scope, element);
+            }
         }
     };
+
+    // -rx- var linkFn = function (scope, element, attrs) {
+    // -rx-     Log.log(_this, "linkFn: (" + (++linkFnCount) + ") " + (angular.isDefined(scope.typeDoc) ? JavadocModelUtils.getQualifiedName(scope.typeDoc): ""));
+
+    // -rx-     if (angular.isDefined( scope.typeDoc ) ) {
+    // -rx-         $compile( "<span>" + Formatter.formatType(scope.typeDoc) + "</span>")(scope, function(cloned, scope) {
+    // -rx-             Log.log(_this, "linkFn.compile.link.clonedAttach: (" + (++clonedAttachCount) + ") " + JavadocModelUtils.getQualifiedName(scope.typeDoc));
+    // -rx-             element.replaceWith(cloned); 
+    // -rx-         });
+    // -rx-     }
+    // -rx- };
+
+    // -rx- var compileFn = function(templateElement, templateAttrs) {
+    // -rx-     Log.log(_this, "compileFn: " + (++compileFnCount));
+    // -rx-     return linkFn;
+    // -rx- };
 
     return {
       restrict: 'E',
       scope: {
         typeDoc: '=doc'
       },
+      // -rx- compile: compileFn
       link: linkFn
     };
 })
+
+/**
+ * <sa-type-parameter> custom element. 
+ *
+ */
+.directive('saTypeParameter', function($compile, Formatter, JavadocModelUtils) {
+
+    var log = function(str) {
+        // -rx- console.log("saTypeParameter: " + str);
+    }
+
+    /**
+     * Pre-compiled template function for simple parameter types.
+     * A "simple" parameter type has no bounds (i.e. no "extends" or "super")
+     */
+    var simpleTypeTemplateFn = $compile("<span>{{typeParameter.typeName}}</span>");
+
+    /**
+     * Replace the given element (<sa-type>) with a <span> for simple types.
+     * The span was pre-compiled to a template function above.  The template function
+     * is called with the given scope to bind the scope to the template (to resolve
+     * interpolations like {{typeParameter.typeName}} ). It returns a link function which,
+     * when called, returns the DOM element (the *template* element).
+     *
+     * The link function in this case is ignored. Instead, we also pass a "cloned attach 
+     * function" to the template function.  The template function will clone the template
+     * element, bind the clone to the scope, then call the cloned attach function. 
+     * The purpose of the cloned attach function is to attach the cloned element to the
+     * DOM somewhere. In this case we replace the <sa-type-parameter> element with the cloned element.
+     *
+     */
+    var linkSimpleType = function(scope, element) {
+        log("linkSimpleType: " + scope.typeParameter.typeName);
+        simpleTypeTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned);
+        });
+    }
+
+    var linkComplexType = function(scope, element) {
+        log("linkComplexType: " + scope.typeParameter.typeName);
+        $compile( "<span>" + Formatter.formatTypeParameter(scope.typeParameter) + "</span>")(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+        });
+    }
+
+    var linkFn = function (scope, element, attrs) {
+
+        // Why would it ever NOT be defined??
+        if (angular.isDefined(scope.typeParameter)) {
+
+            if (JavadocModelUtils.isSimpleTypeParameter(scope.typeParameter)) {
+                linkSimpleType(scope, element);
+            } else {
+                linkComplexType(scope, element);
+            }
+        }
+    };
+
+    return {
+      restrict: 'E',
+      scope: {
+        typeParameter: '=doc'
+      },
+      link: linkFn
+    };
+})
+
 
 /**
  * <sa-type-parameters> custom element. 
@@ -1460,26 +1666,112 @@ angular.module( "JavaApp", ['ngRoute',
  */
 .directive('saTypeParameters', function($compile, Formatter) {
 
-    var linkFn = function ($scope, element, attrs) {
+    var log = function(str) {
+        // -rx- console.log("saTypeParameterS: " + str);
+    }
 
-        // -rx- console.log("saTypeParameters.linkFn: " + JSON.stringify($scope.typeParameters, undefined, 2));
 
-        $scope.$watch('typeParameters', function() { 
+    var noTypeParametersTemplateFn = $compile("<span></span>");
 
-            // -rx- console.log("saTypeParameters.linkFn.watch: " + JSON.stringify($scope.typeParameters, undefined, 2));
+    var singleTypeParameterTemplateFn = $compile("<span>&lt;<sa-type-parameter doc='typeParameters[0]'></sa-type-parameter>&gt;</span>");
 
-            if ( angular.isDefined( $scope.typeParameters ) ) {
-                $compile( "<span>" + Formatter.formatTypeParameters($scope.typeParameters) + "</span>")($scope, function(cloned, $scope) {
-                    element.replaceWith(cloned); 
+    var doubleTypeParameterTemplateFn = $compile("<span>&lt;"
+                                                 + "<sa-type-parameter doc='typeParameters[0]'></sa-type-parameter>, "
+                                                 + "<sa-type-parameter doc='typeParameters[1]'></sa-type-parameter>"
+                                                 + "&gt;</span>");
 
-                    // Need to set closure variable 'element' to 'cloned', otherwise element
-                    // will be null the next time $scope.typeParameters is updated (and the $watch 
-                    // function called).
-                    element = cloned;   
-                });
-            }
-
+    var linkNoTypeParameters = function(scope, element) {
+        log("linkNoTypeParameters: ");
+        noTypeParametersTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+            scope.element = cloned; // save the new element (the cloned element) to the scope.
         });
+    }
+
+    var linkSingleTypeParameter = function(scope, element) {
+        log("linkSingleTypeParameter: ");
+        singleTypeParameterTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned);
+            scope.element = cloned; // save the new element (the cloned element) to the scope.
+        });
+    }
+
+    var linkDoubleTypeParameter = function(scope, element) {
+        log("linkDoubleTypeParameter: ");
+        doubleTypeParameterTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+            scope.element = cloned; // save the new element (the cloned element) to the scope, to be replaced later when typeParameters is updated.
+        });
+    }
+
+    /**
+     * Dynamically compile html to handle multiple type parameters.
+     */
+    var linkManyTypeParameters = function(scope, element) {
+        log("linkManyTypeParameters: ");
+
+        var dynamicHtml =  "<span>" + Formatter.formatTypeParameters(scope.typeParameters) + "</span>";
+
+        $compile( dynamicHtml )(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+
+            // Need to set closure variable 'element' to 'cloned', otherwise element
+            // will be null the next time scope.typeParameters is updated (and the $watch 
+            // function called).
+            scope.element = cloned; // save the new element (the cloned element) to the scope, to be replaced later when typeParameters is updated.
+        });
+    }
+
+
+    var linkFn = function (scope, element, attrs) {
+
+        // -rx- console.log("saTypeParameters.linkFn: " + JSON.stringify(scope.typeParameters, undefined, 2));
+        // -rx- console.log("saTypeParameters.linkFn: " );
+
+        // The $compile function below formats the type parameters as hard-coded html, 
+        // so it's not "bound" to the scope with interpolating directives like you'd expect.
+        // That's why we have to watch the typeParameters field of the scope and force it to
+        // recompute the html.
+        //
+        // You may be wondering how come the javadocModel update doesn't automatically
+        // trigger a built-in watcher on the typeParameters field and re-gen the directive
+        // automatically?  Well, the javadocModel update *does* trigger a built-in watcher
+        // on the typeParameters field.  However, it does NOT trigger a re-compile/link of
+        // the directive.  The directive's link function is run only once -- after compilation,
+        // to link the scope to the view gen'ed by the directive. Once the scope is linked,
+        // it's linked forever.  Updates to the scope are processed thru watchers during $digest.  
+        //
+        // Since the view gen'ed by this directive doesn't contain any wathcers, it won't
+        // respond to scope updates. Hence the need for the watcher.
+        //
+
+        if ( angular.isDefined( scope.typeParameters ) ) {
+
+            // Need to save the element away in the scope so that the watcher
+            // function below will be able to use it when the typeParameters field
+            // is updated.  Also because we use element.replaceWith(clonedElement),
+            // which means the original element is lost, replaced with the cloned.
+            // We then save the cloned element to the scope, so that subsequent
+            // updates to typeParameters will replace the cloned element.
+            // (there must be a better way to explain this....)
+            
+            scope.element = element;
+
+            scope.$watch('typeParameters', function() { 
+
+                log("linkFn.watch: " + Formatter.formatTypeParameters(scope.typeParameters));
+
+                if (scope.typeParameters.length == 0) {
+                    linkNoTypeParameters(scope, scope.element);
+                } else if (scope.typeParameters.length == 1) {
+                    linkSingleTypeParameter(scope, scope.element);
+                } else if (scope.typeParameters.length == 2) {
+                    linkDoubleTypeParameter(scope, scope.element);
+                } else {
+                    linkManyTypeParameters(scope, scope.element);
+                }
+            });
+        }
     };
 
     return {
@@ -1490,6 +1782,75 @@ angular.module( "JavaApp", ['ngRoute',
       link: linkFn
     };
 })
+
+
+/**
+ * <sa-method-signature> custom element. 
+ *
+ */
+.directive('saMethodSignature', function($compile, Formatter) {
+
+    var log = function(str) {
+        console.log("saMethodSignature: " + str);
+    }
+
+    var noParametersTemplateFn = $compile("<span>()</span>");
+
+    var singleParameterTemplateFn = $compile("<span>(<sa-type doc='parameters[0].type'></sa-type> {{parameters[0].name}})</span>");
+
+    var linkNoParameters = function(scope, element) {
+        log("linkNoParameters: ");
+        noParametersTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+        });
+    }
+
+    var linkSingleParameter = function(scope, element) {
+        log("linkSingleParameter: ");
+        singleParameterTemplateFn(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+        });
+    }
+
+    /**
+     * Dynamically compile html to handle multiple parameters.
+     */
+    var linkMultipleParameters = function(scope, element) {
+        log("linkMultipleParameters: " + scope.flatSignature);
+
+        var dynamicHtml =  "<span>(" + Formatter.formatMethodSignature(scope.parameters, scope.flatSignature) + ")</span>";
+
+        $compile( dynamicHtml )(scope, function(cloned, scope) {
+            element.replaceWith(cloned); 
+        });
+    }
+
+
+    var linkFn = function (scope, element, attrs) {
+
+        if ( angular.isDefined( scope.parameters ) ) {
+
+            if (scope.parameters.length == 0) {
+                linkNoParameters(scope, element);
+            } else if (scope.parameters.length == 1) {
+                linkSingleParameter(scope, element);
+            } else {
+                linkMultipleParameters(scope, element);
+            }
+        }
+    };
+
+    return {
+      restrict: 'E',
+      scope: {
+        parameters: '=',
+        flatSignature: '='
+      },
+      link: linkFn
+    };
+})
+
+
 
 /**
  * underscore.js support.

@@ -8,13 +8,21 @@ import java.util.List;
 import java.util.Map;
 
 import com.surfapi.app.JavadocMapUtils;
+import com.surfapi.app.LibraryUtils;
 import com.surfapi.coll.Cawls;
+import com.surfapi.coll.ListBuilder;
 import com.surfapi.coll.MapBuilder;
+import com.surfapi.db.BulkWriter;
 import com.surfapi.db.DB;
+import com.surfapi.db.MongoDBImpl;
 import com.surfapi.log.Log;
 
 /**
  * Index of superclass-name -> subclasses
+ * 
+ * Note there are only entries per library in the index, not per library VERSION.
+ * So when removing must be careful not to remove entries if the entry has
+ * a corresponding document in another version of the library.
  * 
  * Note: subclasses are registered only for their IMMEDIATE superclass (not
  *       parents of the superclass).
@@ -89,15 +97,49 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
         // Note: If this library has multiple versions then we must make sure not to 
         // delete the entries associated with other versions.  If there's only
         // 1 version, then we're ok.
-        // TODO: handle libraries with multiple versions
-        if (getDb().getLibraryVersions( library.get("lang"), library.get("name") ).size() == 1) {
-            
-            // TODO: probably should be filtering on lang too.
-            getDb().remove( getCollectionName(), new MapBuilder<String, String>()
-                                                      .append( JavadocMapUtils.LibraryFieldName + ".name", library.get("name")) );
-        }
+        // DONE: handle libraries with multiple versions
+        //       perhaps by querying for the _id while globbing out the version field?
+        //       getDb().find( new regex( "/java/com.surfapi/.*?/")
+        //       You'd have to go thru every entry that could potentially be deleted (the query
+        //       below only don't delete the entries), and check if the relativeId exists 
+        //       in any other library.  That's a matter of calling the above query w/ regex.
+        //       So we're going to be doing quite a few queries during removal.  That could
+        //       take some time.  The other thing is to keep track of the libraries in the
+        //       indexDocument.  When the list drops to zero, remove the entry.  This would
+        //       save us a few queries.
+        // DONE: also removal might be faster if we put the indexDocuemnt _id in front of
+        //       the indexed column value, cuz that would be an easier query than what we're
+        //       doing now, but not much easier.
+        //       essentially it's like indexing the indexDocuemtns on the library field, sans version,
+        //       in addition to the _superclass field.
+        //       
+        getDb().remove( getCollectionName(), new MapBuilder()
+                                                    .append( "_id", buildIdsForLibraryCriteria( library ) )
+                                                    // .append( "_libraryVersions", new MapBuilder().append( "$size", 1) ) );
+                                                    .append( "_libraryVersions", new ListBuilder<String>().append( library.get("version") ) ) );
         
+        return removeLibraryFromExistingEntries(library);
+    }
+    
+    /**
+     * Update the _libraryVersions field in all entries that match the given library (sans version)
+     * and remove the given library.
+     * 
+     */
+    protected AllKnownSubclassesQuery removeLibraryFromExistingEntries(Map library) {
+        
+        getDb().update( getCollectionName(), 
+                        new MapBuilder().append( "_id", buildIdsForLibraryCriteria( library ) ),
+                        new MapBuilder().append( "$pull", new MapBuilder().append( "_libraryVersions", library.get("version") ) ) );
+       
         return this;
+    }
+
+    /**
+     * @return the criteria for matching the _id field to the given library
+     */
+    protected Map buildIdsForLibraryCriteria(Map libraryModel) {
+        return new MapBuilder().append( "$regex", "^" + LibraryUtils.getIdSansVersion(libraryModel) + ".*");
     }
     
     /**
@@ -111,17 +153,30 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
     
     private class IndexBuilder implements DB.ForAll {
         
-       @Override
-       public void call(DB db, String collection, Map javadocModel) {
-           insert(javadocModel);
-       }
- 
+        private BulkWriter bulkWriter;
+        
+        @Override
+        public void before(DB db, String collection) {
+            bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName());
+                                // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
+        }
 
-       public void insert(Map javadocModel) {
-           if (JavadocMapUtils.isClass(javadocModel)) {
-               getDb().save( getCollectionName(), buildDocuments(javadocModel) );
-           }
-       }
+        @Override 
+        public void after(DB db, String collection) {
+            bulkWriter.flush();
+        }
+        
+        @Override
+        public void call(DB db, String collection, Map javadocModel) {
+            insert(javadocModel);
+        }
+
+        public void insert(Map javadocModel) {
+            if (JavadocMapUtils.isClass(javadocModel)) {
+                // getDb().save( getCollectionName(), buildDocuments(javadocModel) );
+                bulkWriter.insert( buildDocuments(javadocModel) );
+            }
+        }
 
        /**
         * @return the "interfaces" field if it's an interface; otherwise the "superclass" field.
@@ -144,11 +199,35 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
            for (Map superclass : getSuperclasses(javadocModel)) {
                // Don't add all the subclasses of java.lang.Object - there's just too many..
                if ( !JavadocMapUtils.getQualifiedName(superclass).equals("java.lang.Object")) {
-                   retMe.add( buildDocument( javadocModel, superclass ) );
+                   retMe.add( versionedDocument( buildDocument( javadocModel, superclass ) ) );
                }
            }
 
            return retMe;
+       }
+       
+       /**
+        * Create a "versioned" instance of the given document.  Lookup the indexedDocument
+        * in the query first.  If there's an existingDocuemnt (probably due to another version
+        * of the library), then pull out its "libraryVersions" field, which is a Set of 
+        * versions.  Put the current library version in the set and then put it in the
+        * "versioned" indexedDocument.
+        * 
+        * @return a "versioned" form of the given indexedDocument
+        */
+       protected Map versionedDocument( Map indexedDocument ) {
+           
+           Map existingDocument = getDb().read( getCollectionName(), (String) indexedDocument.get("_id"));
+           
+           List<String> libraryVersions = (existingDocument != null) 
+                                           ? (List<String>) existingDocument.get("_libraryVersions")
+                                           : new ArrayList<String>();
+                                           
+           libraryVersions.add( JavadocMapUtils.getLibraryVersion(indexedDocument) );
+           
+           indexedDocument.put("_libraryVersions", libraryVersions);
+           
+           return indexedDocument;
        }
 
        /**
@@ -156,16 +235,26 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
         *         needed by the index.
         */
        protected Map buildDocument(Map javadocModel, Map superclass) {
-           Map retMe = JavadocMapUtils.buildTypeStub(javadocModel);
 
-           // The _id field is constructed without library version such that only 1 version of the entry exists
-           retMe.put( "_id", JavadocMapUtils.getQualifiedName(superclass) 
-                             + JavadocMapUtils.getIdSansVersion( javadocModel ) );
+           Map retMe = JavadocMapUtils.buildTypeStub(javadocModel);
+          
+           retMe.put( "_id", buildDocumentId(javadocModel, superclass) );
            
            retMe.put( "_superclass", JavadocMapUtils.getQualifiedName(superclass) );
            retMe.put( JavadocMapUtils.LibraryFieldName, javadocModel.get( JavadocMapUtils.LibraryFieldName) );
 
            return retMe;
+       }
+       
+       /**
+        * The _id field is constructed without library version such that only 1 version of the entry exists
+        *         *
+        * @return the _id field for the indexed document.
+        */
+       protected String buildDocumentId(Map javadocModel, Map superclass) {
+           return JavadocMapUtils.getIdSansVersion( javadocModel )
+                           + JavadocMapUtils.getQualifiedName(superclass); // in case we ever want to include grandparent classes
+         
        }
     }
 

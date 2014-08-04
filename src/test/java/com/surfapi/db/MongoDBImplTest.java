@@ -16,7 +16,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.BulkWriteOperation;
 import com.mongodb.DBCollection;
+import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
 import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.coll.Cawls;
@@ -306,6 +308,37 @@ public class MongoDBImplTest {
         assertNotNull( Cawls.findFirst( docs, doc2) );
     }
 
+    /**
+    *
+    */
+   @Test
+   public void testBulkWrite() throws Exception {
+       assumeTrue( mongoDBProcessRule.isStarted() );
+
+       MongoDBImpl db = new MongoDBImpl("test1");
+       
+       BulkWriteOperation bwo = db.getMongoDB().getCollection("test.collection").initializeUnorderedBulkOperation();
+
+       bwo.insert( new BasicDBObject(new MapBuilder().append( "_id", "1")) );
+       bwo.insert( new BasicDBObject(new MapBuilder().append( "_id", "2")) );
+       bwo.insert( new BasicDBObject(new MapBuilder().append( "_id", "3")) );
+       bwo.insert( new BasicDBObject(new MapBuilder().append( "_id", "4")) );
+       bwo.insert( new BasicDBObject(new MapBuilder().append( "_id", "5")) );
+       bwo.insert( new BasicDBObject(new MapBuilder().append( "_id", "6")) );
+       
+       bwo.execute( WriteConcern.UNACKNOWLEDGED );
+
+       Thread.sleep(500); // sleep half a second for all unacknowledged updates to complete
+       
+       assertNotNull( db.read( "test.collection", "1" ) );
+       assertNotNull( db.read( "test.collection", "2" ) );
+       assertNotNull( db.read( "test.collection", "3" ) );
+       assertNotNull( db.read( "test.collection", "4" ) );
+       assertNotNull( db.read( "test.collection", "5" ) );
+       assertNotNull( db.read( "test.collection", "6" ) );
+
+   }
+   
 
     private void log(String msg, List<Map> docs) {
         for (Map doc : docs) {

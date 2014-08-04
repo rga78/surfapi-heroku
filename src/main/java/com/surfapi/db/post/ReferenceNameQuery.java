@@ -15,7 +15,9 @@ import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.app.LibraryUtils;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
+import com.surfapi.db.BulkWriter;
 import com.surfapi.db.DB;
+import com.surfapi.db.MongoDBImpl;
 import com.surfapi.log.Log;
 
 /**
@@ -170,14 +172,31 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
      */
     protected class IndexBuilder implements DB.ForAll {
 
+        private BulkWriter bulkWriter;
+        
+        @Override
+        public void before(DB db, String collection) {
+            bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName());
+                                    // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
+        }
+        
         /**
          *
          */
         @Override
         public void call(DB db, String collection, Map doc) {
             for (Map refDoc : buildReferenceDocs(doc)) {
-                db.save( getCollectionName() , refDoc );
+                // db.save( getCollectionName() , refDoc );
+                bulkWriter.insert( refDoc );
             }
+        }
+        
+        /**
+         * 
+         */
+        @Override 
+        public void after(DB db, String collection) {
+            bulkWriter.flush();
         }
         
         /**

@@ -20,7 +20,6 @@ import com.surfapi.coll.ListBuilder;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.coll.SetBuilder;
 import com.surfapi.db.DB;
-import com.surfapi.db.DBImpl;
 import com.surfapi.db.DBLoader;
 import com.surfapi.db.MongoDBImpl;
 import com.surfapi.javadoc.SimpleJavadocProcess;
@@ -237,10 +236,26 @@ public class ReferenceNameQueryTest {
     @Test
     public void testLookupSuperclassDoc() throws Exception {
         
-        DB db = new DBImpl();
-        new DBLoader().inject(db).loadFile( new File("src/test/resources/com.surfapi_1.0.json") )
-                                 .loadFile( new File("src/test/resources/com.surfapi_0.9.json") );
+        assumeTrue( mongoDBProcessRule.isStarted() );
         
+        File sourcePath = new File("src/test/java");
+
+        new SimpleJavadocProcess().setMongoUri( MongoUri )
+                                  .setLibraryId( "/java/com.surfapi/1.0" )
+                                  .setSourcePath( sourcePath )
+                                  .setPackages( Arrays.asList( "com.surfapi.test" ) )
+                                  .run();
+
+        new SimpleJavadocProcess().setMongoUri( MongoUri )
+                                  .setLibraryId( "/java/com.surfapi/0.9" )
+                                  .setSourcePath( sourcePath )
+                                  .setPackages( Arrays.asList( "com.surfapi.test" ) )
+                                  .run();
+        
+        DB db = new MongoDBImpl(MongoDbName);
+        
+        new ReferenceNameQuery().inject(db).buildIndex();
+              
         String libraryId = "/java/com.surfapi/1.0";
         Map doc = db.read(libraryId + "/com.surfapi.test.DemoJavadocSubClass");
         assertNotNull(doc);

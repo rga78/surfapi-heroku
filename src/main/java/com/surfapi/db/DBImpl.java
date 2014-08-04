@@ -68,9 +68,11 @@ public class DBImpl extends ConcurrentHashMap<String, Map<String, Map>> implemen
     @Override
     public void forAll(String collectionName, ForAll callback) {
         Map<String, Map> collection = get(collectionName);
+        callback.before(this, collectionName);
         for (Map obj : collection.values()) {
             callback.call(this, collectionName, obj);
         }
+        callback.after(this,collectionName);
     }
 
 
@@ -209,6 +211,16 @@ public class DBImpl extends ConcurrentHashMap<String, Map<String, Map>> implemen
     @Override
     public String getName() {
         return "Map-based-db-for-testing";
+    }
+
+    @Override
+    public void update(String collectionName, Map query, Map fields) {
+        throw new RuntimeException("not implemented");
+    }
+
+    @Override
+    public com.mongodb.DB getMongoDB() {
+        throw new RuntimeException("not implemented");
     }
 
 

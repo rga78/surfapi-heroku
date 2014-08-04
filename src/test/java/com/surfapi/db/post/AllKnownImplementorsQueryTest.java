@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -151,6 +152,103 @@ public class AllKnownImplementorsQueryTest {
         impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
         assertNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
         assertNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    public void testRemoveLibraryMultipleVersions() throws Exception {
+        
+        assumeTrue(mongoDBProcessRule.isStarted());
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        // add the library first
+        String libraryId1 = "/java/com.surfapi.proc/1.0";
+        String libraryId2 = "/java/com.surfapi.proc/2.0";
+        
+        File baseDir = new File("src/main/java");
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId1 )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+        
+        new SimpleJavadocProcess()
+               .setMongoUri( MongoUri )
+               .setLibraryId( libraryId2 )
+               .setSourcePath( baseDir )
+               .setPackages( Arrays.asList( "com.surfapi.proc" ) )
+               .run();
+
+        new AllKnownImplementorsQuery().inject(db).addLibraryToIndex(libraryId1);
+        new AllKnownImplementorsQuery().inject(db).addLibraryToIndex(libraryId2);
+        
+        // Verify it's there 
+        {
+            List<Map> impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
+            assertFalse( impls.isEmpty() );
+            assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
+            assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
+        
+            Map impl =  Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) ;
+            assertNotNull( impl );
+            List<String> libraryVersions = (List<String>) impl.get("_libraryVersions");
+            assertNotNull( libraryVersions );
+            assertEquals( 2, libraryVersions.size() );
+            assertTrue( libraryVersions.contains( "1.0") );
+            assertTrue( libraryVersions.contains( "2.0") );
+        }
+        
+        // Now remove
+        new AllKnownImplementorsQuery().inject(db).removeLibrary(libraryId1);
+        
+        // Verify it's still there, only with version removed 
+        {
+            List<Map> impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
+            assertFalse( impls.isEmpty() );
+            assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
+            assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
+        
+            Map impl =  Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) ;
+            assertNotNull( impl );
+            List<String> libraryVersions = (List<String>) impl.get("_libraryVersions");
+            assertNotNull( libraryVersions );
+            assertEquals( 1, libraryVersions.size() );
+            assertTrue( libraryVersions.contains( "2.0") );
+        }
+        
+        // remove library1 again (this should have no effect)
+        new AllKnownImplementorsQuery().inject(db).removeLibrary(libraryId1);
+        
+        // Verify it's still there, only with version removed 
+        {
+            List<Map> impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
+            assertFalse( impls.isEmpty() );
+            assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
+            assertNotNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
+        
+            Map impl =  Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) ;
+            assertNotNull( impl );
+            List<String> libraryVersions = (List<String>) impl.get("_libraryVersions");
+            assertNotNull( libraryVersions );
+            assertEquals( 1, libraryVersions.size() );
+            assertTrue( libraryVersions.contains( "2.0") );
+        }
+        
+        // now remove again
+        new AllKnownImplementorsQuery().inject(db).removeLibrary(libraryId2);
+        
+        
+        // Verify it's gone
+        {
+            List<Map> impls = new AllKnownImplementorsQuery().inject(db).query("java.util.Observer");
+            assertNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamCollector" ) ) );
+            assertNull( Cawls.findFirst( impls, new MapBuilder().append( "name", "StreamPiper" ) ) );
+        }
     }
 
 

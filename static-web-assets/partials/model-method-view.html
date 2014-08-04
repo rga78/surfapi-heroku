@@ -17,7 +17,8 @@
             <a class="model-identifier" ng-click="showFullDoc()">{{methodDoc.name}}</a>
 
             <!-- method signature (includes annotations on any parms) -->
-            (<span ng-bind-html="formatMethodSignature()"></span>)
+            <!-- (<span ng-bind-html="formatMethodSignature()"></span>) -->
+            <sa-method-signature parameters="methodDoc.parameters" flat-signature="methodDoc.flatSignature"></sa-method-signature>
 
             <!-- throws clause -->
             <span ng-show="!isEmpty(methodDoc.thrownExceptionTypes)">throws

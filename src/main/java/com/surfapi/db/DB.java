@@ -28,6 +28,10 @@ public interface DB  {
      */
     public static interface ForAll {
         public void call(DB db, String collection, Map obj) ;
+
+        public void after(DB db, String collection);
+
+        void before(DB db, String collection);
     }
     
     /**
@@ -111,6 +115,18 @@ public interface DB  {
      * @return the name/id of this db.
      */
     public String getName();
+    
+    /**
+     * Update the documents that match the given query with the given fields.
+     * 
+     */
+    public void update(String collectionName, Map query, Map fields );
+    
+    /**
+     * @return the mongoDB client
+     */
+    public com.mongodb.DB getMongoDB();
+    
     
 }
 

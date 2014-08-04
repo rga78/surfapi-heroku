@@ -243,6 +243,14 @@ public class JavadocMapUtils {
     public static String getLibraryId(Map doc) {
         return (String) ((Map)doc.get(JavadocMapUtils.LibraryFieldName)).get("_id");
     }
+    
+    /**
+     * @return the _library.version field.
+     */
+    public static String getLibraryVersion(Map doc) {
+        return (String) ((Map)doc.get(JavadocMapUtils.LibraryFieldName)).get("version");
+    }
+
 
     /**
      * @return true if metaType="interface"
@@ -270,8 +278,16 @@ public class JavadocMapUtils {
      * @return an id that doesn't include the library versions
      */
     public static String getIdSansVersion(Map javadocModel) {
-        Map library = (Map) javadocModel.get(JavadocMapUtils.LibraryFieldName);
-        return "/" + library.get("lang") + "/" + library.get("name") + "/" + getRelativeId(javadocModel);
+        return LibraryUtils.getIdSansVersion((Map) javadocModel.get(JavadocMapUtils.LibraryFieldName))
+                + "/" + getRelativeId(javadocModel) ;
+    }
+
+    /**
+     * @return doc with the _id field removed
+     */
+    public static Map removeId(Map doc) {
+        doc.remove("_id");
+        return doc;
     }
 
 

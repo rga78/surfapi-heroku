@@ -10,13 +10,16 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 
+import com.mongodb.WriteConcern;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.LanguageVersion;
 import com.sun.javadoc.PackageDoc;
 import com.sun.javadoc.RootDoc;
 import com.surfapi.app.JavadocMapUtils;
+import com.surfapi.db.BulkWriter;
 import com.surfapi.db.DB;
 import com.surfapi.db.DBLoader;
+import com.surfapi.db.MongoDBImpl;
 import com.surfapi.db.MongoDBService;
 import com.surfapi.db.post.SetStubIds;
 import com.surfapi.log.Log;
@@ -77,15 +80,20 @@ public class MongoDoclet extends JsonDoclet {
             libraryClassNames.add( classDoc.qualifiedName() );
         }
         
+        BulkWriter bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getLibraryId() )
+                                        .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
+        
         // Process classes and add them to the db.
         for (ClassDoc classDoc : rootDoc.classes()) {
             Log.trace( this, "go: processing class: " + classDoc.qualifiedName() );
-            safeSave( getLibraryId(), processClass(classDoc));
+            // safeSave( getLibraryId(), processClass(classDoc));
+            bulkWriter.safeInsert( (List<Map>) processClass(classDoc) );
         }
         
         // Add all packages to the db.
         Log.trace( this, "go: processing packages...");
-        safeSave( getLibraryId(), processPackages( getPackageDocs() ));
+        bulkWriter.safeInsert( (List<Map>) processPackages( getPackageDocs() ))
+                  .flush();
         
         // Create an "overview" or "summary" document for the library (contains package lists).
         safeSave(DB.LibraryCollectionName, Arrays.asList( createLibraryOverview() ) );
@@ -125,11 +133,6 @@ public class MongoDoclet extends JsonDoclet {
         // Set the _id and _library fields for the documents.
         setIds(retMe);
         
-        // Add to indexes for "all known subclasses" and "all known implementations"
-       ///  new AllKnownSubclassesQuery().inject(MongoDBService.getDb()).insert( retMe );
-        
-      //   new AllKnownImplementationsQuery().inject(MongoDBService.getDb()).insert( retMe );
- 
         return retMe;
     }
     

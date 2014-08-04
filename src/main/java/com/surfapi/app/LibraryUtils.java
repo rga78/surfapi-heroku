@@ -107,6 +107,13 @@ public class LibraryUtils {
         
         return false;
     }
+
+    /**
+     * @return /[lang]/[name]  (no version)
+     */
+    public static String getIdSansVersion(Map library) {
+        return "/" + library.get("lang") + "/" + library.get("name") ;
+    }
         
 }
 

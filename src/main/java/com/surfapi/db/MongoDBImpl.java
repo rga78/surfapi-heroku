@@ -67,6 +67,7 @@ public class MongoDBImpl implements DB {
     /**
      * @return the mongoDB client
      */
+    @Override
     public com.mongodb.DB getMongoDB() {
         return mongoDB;
     }
@@ -114,6 +115,15 @@ public class MongoDBImpl implements DB {
            save(collection, doc);
        }
     }
+    
+    
+    @Override
+    public void update(String collection, Map query, Map fields) {
+        mongoDB.getCollection(collection).update( new BasicDBObject(query), 
+                                                  new BasicDBObject(fields), 
+                                                  false, 
+                                                  true );
+    }
 
     /**
      * Run callback against all documents in the given set of collections.
@@ -132,11 +142,13 @@ public class MongoDBImpl implements DB {
     public void forAll(String collectionName, ForAll callback) {
 
         Log.info(this, "forAll: collection: " + collectionName);
+        callback.before(this, collectionName);
         DBCursor dbCursor = mongoDB.getCollection(collectionName).find();
         for (DBObject dbobj : dbCursor) {
             callback.call( this, collectionName, dbobj.toMap() );
         }
         dbCursor.close();
+        callback.after(this, collectionName);
     }
 
     /**
@@ -331,5 +343,7 @@ public class MongoDBImpl implements DB {
     public Object remove(String collection, Map filter) {
         return mongoDB.getCollection(collection).remove( new BasicDBObject(filter) );
     }
+
+
 
 }

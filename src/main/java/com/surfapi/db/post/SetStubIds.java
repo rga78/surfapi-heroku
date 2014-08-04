@@ -264,6 +264,18 @@ public class SetStubIds implements DB.ForAll {
       
         return methodDoc;
     }
+
+    @Override
+    public void after(DB db, String collection) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void before(DB db, String collection) {
+        // TODO Auto-generated method stub
+        
+    }
  
 
 }

@@ -12,7 +12,9 @@ import com.surfapi.app.JavadocMapUtils;
 import com.surfapi.app.JavadocObject;
 import com.surfapi.coll.Cawls;
 import com.surfapi.coll.MapBuilder;
+import com.surfapi.db.BulkWriter;
 import com.surfapi.db.DB;
+import com.surfapi.db.MongoDBImpl;
 import com.surfapi.log.Log;
 
 /**
@@ -73,7 +75,7 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         String indexName = buildAutoCompleteIndexName( libraryId );
         getDb().drop( indexName  );
         
-        Log.info(this, "buildIndex: building index for library " + libraryId);
+        Log.info(this, "buildIndexForLibrary: building index for library " + libraryId);
 
         getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
         
@@ -181,12 +183,28 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
     /**
      * Builds the index.
      */
-    protected static class IndexBuilder implements DB.ForAll {
+    protected class IndexBuilder implements DB.ForAll {
         
         /**
          * The index (collection) name.
          */
         private String indexName;
+        
+        /**
+         * bulk writes.
+         */
+        private BulkWriter bulkWriter;
+        
+        @Override
+        public void before(DB db, String collection) {
+            bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), indexName);
+                                // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
+        }
+
+        @Override 
+        public void after(DB db, String collection) {
+            bulkWriter.flush();
+        }
         
         /**
          * CTOR.
@@ -203,7 +221,8 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         @Override
         public void call(DB db, String collection, Map obj) {
             for ( Map indexedObj : buildIndexedDocuments( new JavadocObject( obj ) ) ) {
-                db.save( indexName, indexedObj );
+               //  db.save( indexName, indexedObj );
+                bulkWriter.insert( indexedObj );
             }
         }
         
