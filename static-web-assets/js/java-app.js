@@ -1,14 +1,16 @@
-angular.module( "JavaApp", ['ngRoute', 
-                            'ui.bootstrap', 
+angular.module( "JavaApp", ['ui.bootstrap', 
                             'ngSanitize', 
                             'ui.keypress'] )
         
 /**
- * 
+ * TODO: I don't really know what html5 mode is.  I should learn that.
+ *       Something about the history api.  More functionality.  Or something.
+ *       One thign I notice is the URL is weird... the hash string is always
+ *       HTML-escaped for some reason.
  */
-.config( function($locationProvider, $routeProvider) {
+.config(['$locationProvider', function($locationProvider) {
     $locationProvider.html5Mode(true);
-})
+}])
 
 
 /**
@@ -22,7 +24,7 @@ angular.module( "JavaApp", ['ngRoute',
  * just be returned (no 'new'), which is fine for my purposes.  I.e factory is simpler.
  * Doesn't use new.  If you don't need new, use factory.
  */
-.service("AutoCompleteService", function($http) {
+.service("AutoCompleteService", ['$http', function($http) {
 
     var buildUrl = function(str, indexName) {
         indexName = indexName || "java";
@@ -35,14 +37,12 @@ angular.module( "JavaApp", ['ngRoute',
                         alert("AutoCompleteService.get(" + str +") didn't work: " + status + ": " + data);
                     });
     }
-})
+}])
 
 /**
  *
  */
-.service("DbService", function($http, 
-                               $rootScope, 
-                               Log) {
+.service("DbService", [ '$http', '$rootScope', 'Log', function($http, $rootScope, Log) {
 
     var _this = this;
     this.logging = { prefix: "DbService" };
@@ -86,15 +86,16 @@ angular.module( "JavaApp", ['ngRoute',
 
     this.get = get;
     this.getQuietly = getQuietly;
-})
+}])
 
 /**
  *
  */
-.service("Formatter", function(_, 
-                               Utils, 
-                               JavadocModelUtils, 
-                               Log) {
+.factory("Formatter", [ "_", "Utils", "JavadocModelUtils", "Log", 
+                        function(_, 
+                                 Utils, 
+                                 JavadocModelUtils, 
+                                 Log) {
 
     var isEmpty = Utils.isEmpty;
     var _this = this;
@@ -395,20 +396,22 @@ angular.module( "JavaApp", ['ngRoute',
     }
 
     // Exported functions.
-    this.formatType = formatType;
-    this.formatTypeParameters = formatTypeParameters;
-    this.formatTypeParameter = formatTypeParameter;
-    this.formatMethodSignature = formatMethodSignature;
-    this.formatSeeTag = formatSeeTag;
-    this.formatInlineTag = formatInlineTag;
-    this.formatInlineTags = formatInlineTags;
-    this.formatAnnotation = formatAnnotation;
-})
+    var retMe = {};
+    retMe.formatType = formatType;
+    retMe.formatTypeParameters = formatTypeParameters;
+    retMe.formatTypeParameter = formatTypeParameter;
+    retMe.formatMethodSignature = formatMethodSignature;
+    retMe.formatSeeTag = formatSeeTag;
+    retMe.formatInlineTag = formatInlineTag;
+    retMe.formatInlineTags = formatInlineTags;
+    retMe.formatAnnotation = formatAnnotation;
+    return retMe;
+}])
 
 /**
  * Centralized logging.
  */
-.service("Log", function() {
+.factory("Log", function() {
 
     /**
      *
@@ -431,14 +434,14 @@ angular.module( "JavaApp", ['ngRoute',
     }
     
     // Exported functions.
-    this.log = log;
+    return { log: log };
 })
 
 
 /**
  * Dumping ground for un-categorizable stuff.
  */
-.service("Utils", function(_) {
+.service("Utils", [ "_", function(_) {
 
     var prevLocation = "";
 
@@ -466,13 +469,13 @@ angular.module( "JavaApp", ['ngRoute',
     this.setLocation = setLocation;
     this.getPrevLocation = getPrevLocation;
     this.parseLibraryFromLocation = parseLibraryFromLocation;
-})
+}])
 
 
 /**
  * Convenience methods for handling a javadoc models.
  */
-.service("JavadocModelUtils", function(Utils,_) {
+.service("JavadocModelUtils", ["Utils", "_", function(Utils,_) {
 
     var isEmpty = Utils.isEmpty;
 
@@ -624,14 +627,14 @@ angular.module( "JavaApp", ['ngRoute',
     this.isPrimitiveType = isPrimitiveType;
     this.isParameterizedType = isParameterizedType;
     this.isSimpleTypeParameter = isSimpleTypeParameter;
-})
+}])
 
 
 /**
  * "service" for transforming models (returned from Db) into ViewModels
  * (enhanced with fields specific for view rendering).
  */
-.service("ViewModelService", function(_) {
+.service("ViewModelService", ["_", function(_) {
 
     this.transform = function(model) {
         return model;
@@ -653,14 +656,15 @@ angular.module( "JavaApp", ['ngRoute',
         }
     };
 
-})
+}])
 
 /**
  * Handles "refernece" queries - i.e. queries that attempt to resolve non-_id references
  * to packages/classes/methods/fields by querying the DB for the qualified name of the 
  * reference type. 
  */
-.service("ReferenceQueryService", function(DbService, 
+.service("ReferenceQueryService", ["DbService", "JavadocModelUtils", "$location", "$window", "$modal", "Utils", "_", "Log",
+                                  function(DbService, 
                                            JavadocModelUtils, 
                                            $location, 
                                            $window, 
@@ -772,14 +776,17 @@ angular.module( "JavaApp", ['ngRoute',
 
     this.getReferenceType = getReferenceType;
     this.resolveFirstId = resolveFirstId;
-})
+}])
 
 /**
  *
  * http://angular-ui.github.io/bootstrap/
  */
-.controller("ModalMessageController", function($scope, $modalInstance, message, title) {
-
+.controller("ModalMessageController", ["$scope", "$modalInstance", "message", "title", 
+                                       function($scope, 
+                                                $modalInstance, 
+                                                message, 
+                                                title) {
     $scope.message = message;
     $scope.title = title;
 
@@ -792,26 +799,28 @@ angular.module( "JavaApp", ['ngRoute',
     // -rx-     $modalInstance.dismiss('cancel');
     // -rx- };
 
-})
+}])
 
 /**
  *
  */
-.controller("ModalReferenceQueryResultsController", function($scope, $modalInstance, models) {
+.controller("ModalReferenceQueryResultsController", ["$scope", "$modalInstance", "models",
+                                                     function($scope, $modalInstance, models) {
 
     $scope.models = models;
 
     $scope.cancel = function () {
         $modalInstance.dismiss('cancel');
     };
-})
+}])
 
 
 
 /**
  * For use with the auto-complete box.
  */
-.controller( "SearchController", function($scope, 
+.controller( "SearchController", [ "$scope", "AutoCompleteService", "Utils", "JavadocModelUtils", "Log", 
+                                 function($scope, 
                                           AutoCompleteService, 
                                           Utils, 
                                           JavadocModelUtils,
@@ -891,7 +900,7 @@ angular.module( "JavaApp", ['ngRoute',
     $scope.onChange = onChange;
     $scope.getReferenceName = JavadocModelUtils.getReferenceName;
    
-})
+}])
 
 
 /**
@@ -899,12 +908,13 @@ angular.module( "JavaApp", ['ngRoute',
  * TODO: use array sytax for specifying dependencies so that the code still works
  *       after minify-ing (which will likely change the names of the parms).
  */
-.controller( "JavadocController", function($scope, 
+.controller( "JavadocController", [ "$scope", "$rootScope", "$location", "DbService", "ViewModelService", 
+                                    "Utils", "Formatter", "ReferenceQueryService", "JavadocModelUtils", "Log",
+                                  function($scope, 
                                            $rootScope, 
                                            $location, 
                                            DbService, 
                                            ViewModelService, 
-                                           _, 
                                            Utils, 
                                            Formatter,
                                            ReferenceQueryService,
@@ -913,8 +923,10 @@ angular.module( "JavaApp", ['ngRoute',
 
     var _this = this;
 
-    // -rx- Log.log(_this, "invoked");
-
+    var requestPending = function(isPending) {
+        $scope.requestPending = isPending;
+    };
+                                          
     // Listen for hash changes.
     $scope.$watch(function() {
                       return $location.hash();
@@ -927,7 +939,7 @@ angular.module( "JavaApp", ['ngRoute',
                       } else if (id.indexOf("/java") == 0) {
                           fetchJavadoc(id);
                       } else if (id.indexOf("/q/java/qn/") == 0) {
-                          $scope.requestPending = true;
+                          requestPending(true);
                           ReferenceQueryService.getReferenceType(id);
                       }
                   });
@@ -949,7 +961,7 @@ angular.module( "JavaApp", ['ngRoute',
 
         scrollTop();
 
-        $scope.requestPending = true;
+        requestPending(true);
 
         DbService.get( id )
                  .success( function(data) {
@@ -960,7 +972,7 @@ angular.module( "JavaApp", ['ngRoute',
                     // -rx- $scope[ ViewModelService.getScopeName(data) ] = {};
                     $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
                  }).finally( function() {
-                    $scope.requestPending = false;
+                    requestPending(false);
                  }) ;
     };
 
@@ -968,22 +980,21 @@ angular.module( "JavaApp", ['ngRoute',
         document.body.scrollTop = document.documentElement.scrollTop = 0;
     }
 
-})
+}])
 
 
 /**
  *
  */
-.controller( "AllKnownSubclassesController", function($scope, 
+.controller( "AllKnownSubclassesController", [ "$scope", "$rootScope", "DbService", "JavadocModelUtils", "_", 
+                                             function($scope, 
                                                       $rootScope,
                                                       DbService,
                                                       JavadocModelUtils,
-                                                      Utils,
                                                       _) {
 
     // initialize scope data
     $scope.allKnownSubclasses = [];
-    $scope.isEmpty = Utils.isEmpty;
 
     var buildUrl = function(model) {
         return "/q/java/allKnownSubclasses/" + JavadocModelUtils.getQualifiedName( model );
@@ -1014,21 +1025,20 @@ angular.module( "JavaApp", ['ngRoute',
     });
 
     fetchSubclasses();
-})
+}])
 
 /**
  *
  */
-.controller( "AllKnownImplementorsController", function($scope, 
+.controller( "AllKnownImplementorsController", [ "$scope", "$rootScope", "DbService", "JavadocModelUtils", "_", 
+                                               function($scope, 
                                                         $rootScope,
                                                         DbService,
-                                                        // -rx- Utils,
                                                         JavadocModelUtils,
                                                         _) {
 
     // initialize scope data
     $scope.allKnownImplementors = []
-    // -rx- $scope.isEmpty = Utils.isEmpty;
 
     var buildUrl = function(model) {
         return "/q/java/allKnownImplementors/" + JavadocModelUtils.getQualifiedName( model );
@@ -1061,16 +1071,16 @@ angular.module( "JavaApp", ['ngRoute',
 
 
     fetchImpls();
-})
+}])
 
 /**
  *
  */
-.controller( "MethodController", function($scope, 
+.controller( "MethodController", [ "$scope", "DbService", "ViewModelService", "_", "Utils", "JavadocModelUtils", "ReferenceQueryService",
+                                 function($scope, 
                                           DbService, 
                                           ViewModelService, 
                                           _, 
-                                          Formatter, 
                                           Utils, 
                                           JavadocModelUtils, 
                                           ReferenceQueryService) {
@@ -1134,28 +1144,20 @@ angular.module( "JavaApp", ['ngRoute',
         }
     }
 
-
-    // -rx- delete this Needed by the view to properly render the method signature
-    // -rx- $scope.formatMethodSignature = function() {
-    // -rx-     return Utils.isEmpty($scope.methodDoc.parameters) 
-    // -rx-                 ? "" 
-    // -rx-                 : Formatter.formatMethodSignature( $scope.methodDoc.parameters, $scope.methodDoc.flatSignature );
-    // -rx- };
-
     // If location.hash matches this doc id (meaning the user specifically looked up this method),
     // then automatically show the full doc section.
     if (isLocationHashOnId( getDocId() )) {
         $scope.showFullDocToggle = true;
     }
 
-})
+}])
 
 /**
  *
  */
-.controller( "NavPathBarController", function($scope, 
+.controller( "NavPathBarController", ["$scope", "$rootScope", "JavadocModelUtils", "Utils", "Log", 
+                                      function($scope, 
                                               $rootScope, 
-                                              _, 
                                               JavadocModelUtils, 
                                               Utils,
                                               Log) {
@@ -1236,15 +1238,15 @@ angular.module( "JavaApp", ['ngRoute',
         return anchors;
     }
 
-})
+}])
 
 /**
  *
  */
-.controller( "NavLibraryController", function($scope, 
+.controller( "NavLibraryController", [ "$scope", "$rootScope", "JavadocModelUtils", "DbService", "Log",
+                                     function($scope, 
                                               $rootScope, 
                                               JavadocModelUtils, 
-                                              _, 
                                               DbService,
                                               Log) {
 
@@ -1332,7 +1334,7 @@ angular.module( "JavaApp", ['ngRoute',
         currentLibraryId = null;
     };
 
-})
+}])
 
 
 /**
@@ -1359,7 +1361,8 @@ angular.module( "JavaApp", ['ngRoute',
  * TODO: need more unit tests (just a general reminder... not specific to this filter...)
  * 
  */
-.filter('formatTags', function(Formatter, _, Utils, JavadocModelUtils) {
+.filter('formatTags', [ "Formatter", "_", "Utils", "JavadocModelUtils", 
+                       function(Formatter, _, Utils, JavadocModelUtils) {
 
     var inlineTagRegex = /\{(\@[^\s\}]+)(?:\s*)?([^\}]*)?\}/g;
 
@@ -1385,6 +1388,7 @@ angular.module( "JavaApp", ['ngRoute',
         return _.reduce(formattedTags, function(memo, tag) { return memo.replace(tag.fullText, tag.formattedText); }, input);
     }
 
+    // TODO: write some unit tests for this (now that i finally know how to ut js)
     // testing: var input = "hello {@link java.io.FileReader bad link} and {@link java.io.FileReader#read working\nlink} blah {@inheritDoc} {@same } blah {@code some code }";
     // testing: console.log("filter.formatTags: parseInlineTags: " + JSON.stringify(parseInlineTags(input)));
     // testing: console.log("filter.formatTags: formatTags: " + formatTags(input));
@@ -1402,16 +1406,16 @@ angular.module( "JavaApp", ['ngRoute',
 
         // -rx- return formatTags(input, currentModel);
     };
-})
+}])
 
 /**
  * 
  */
-.filter('formatInlineTags', function(Formatter) {
+.filter('formatInlineTags', ["Formatter", function(Formatter) {
     return function(tags, packageName, className) {
         return Formatter.formatInlineTags(tags, packageName, className);
     }
-})
+}])
 
 /**
  *
@@ -1427,7 +1431,7 @@ angular.module( "JavaApp", ['ngRoute',
  * Note: could use filter:isOtherBlockTag 
  *       see: http://stackoverflow.com/questions/11753321/passing-arguments-to-angularjs-filters
  */
-.filter('otherBlockTags', function(_) {
+.filter('otherBlockTags', [ "_", function(_) {
 
     var isOtherBlockTag = function(tag) {
         switch( tag.kind ) {
@@ -1455,7 +1459,7 @@ angular.module( "JavaApp", ['ngRoute',
       return (tags != null) ? _.filter(tags, isOtherBlockTag) : null;
     };
 
-})
+}])
 
 
 /**
@@ -1464,7 +1468,8 @@ angular.module( "JavaApp", ['ngRoute',
  * TODO: types with typeParameters could maybe embed <sa-type-parameter> ?
  *
  */
-.directive('saType', function($compile, Formatter, JavadocModelUtils, Log) {
+.directive('saType', ["$compile", "Formatter", "JavadocModelUtils", "Log",
+                      function($compile, Formatter, JavadocModelUtils, Log) {
     var _this = this;
     // -rx- this.logging = { prefix: "saType" };
 
@@ -1567,37 +1572,21 @@ angular.module( "JavaApp", ['ngRoute',
         }
     };
 
-    // -rx- var linkFn = function (scope, element, attrs) {
-    // -rx-     Log.log(_this, "linkFn: (" + (++linkFnCount) + ") " + (angular.isDefined(scope.typeDoc) ? JavadocModelUtils.getQualifiedName(scope.typeDoc): ""));
-
-    // -rx-     if (angular.isDefined( scope.typeDoc ) ) {
-    // -rx-         $compile( "<span>" + Formatter.formatType(scope.typeDoc) + "</span>")(scope, function(cloned, scope) {
-    // -rx-             Log.log(_this, "linkFn.compile.link.clonedAttach: (" + (++clonedAttachCount) + ") " + JavadocModelUtils.getQualifiedName(scope.typeDoc));
-    // -rx-             element.replaceWith(cloned); 
-    // -rx-         });
-    // -rx-     }
-    // -rx- };
-
-    // -rx- var compileFn = function(templateElement, templateAttrs) {
-    // -rx-     Log.log(_this, "compileFn: " + (++compileFnCount));
-    // -rx-     return linkFn;
-    // -rx- };
-
     return {
       restrict: 'E',
       scope: {
         typeDoc: '=doc'
       },
-      // -rx- compile: compileFn
       link: linkFn
     };
-})
+}])
 
 /**
  * <sa-type-parameter> custom element. 
  *
  */
-.directive('saTypeParameter', function($compile, Formatter, JavadocModelUtils) {
+.directive('saTypeParameter', [ "$compile", "Formatter", "JavadocModelUtils", 
+                               function($compile, Formatter, JavadocModelUtils) {
 
     var log = function(str) {
         // -rx- console.log("saTypeParameter: " + str);
@@ -1657,14 +1646,15 @@ angular.module( "JavaApp", ['ngRoute',
       },
       link: linkFn
     };
-})
+}])
 
 
 /**
  * <sa-type-parameters> custom element. 
  *
  */
-.directive('saTypeParameters', function($compile, Formatter) {
+.directive('saTypeParameters', [ "$compile", "Formatter", 
+                                 function($compile, Formatter) {
 
     var log = function(str) {
         // -rx- console.log("saTypeParameterS: " + str);
@@ -1781,17 +1771,18 @@ angular.module( "JavaApp", ['ngRoute',
       },
       link: linkFn
     };
-})
+}])
 
 
 /**
  * <sa-method-signature> custom element. 
  *
  */
-.directive('saMethodSignature', function($compile, Formatter) {
+.directive('saMethodSignature', ["$compile", "Formatter", 
+                                 function($compile, Formatter) {
 
     var log = function(str) {
-        console.log("saMethodSignature: " + str);
+        // -rx- console.log("saMethodSignature: " + str);
     }
 
     var noParametersTemplateFn = $compile("<span>()</span>");
@@ -1848,7 +1839,7 @@ angular.module( "JavaApp", ['ngRoute',
       },
       link: linkFn
     };
-})
+}])
 
 
 

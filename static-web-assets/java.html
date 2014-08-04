@@ -27,14 +27,14 @@
     <!-- Load scripts after the header has been rendered to improve the perceived loading time. -->
     <!-- Normally you'd load scripts at the bottom of the html document.  But that's causing the -->
     <!-- unresolved interpolations to show up in the rendered html until angular is loaded. -->
-    <script src="js/angular.js"></script>
-    <script src="js/angular-route.js"></script>
+    <script src="js/angular.min.js"></script>
     <script src="js/angular-sanitize.min.js"></script>
-    <script src="js/ui-bootstrap.js"></script>
-    <script src="js/ui-bootstrap-tpls.js"></script>
-    <script src="js/keypress.js"></script>
+
+    <!-- TODO: do i need -tpls ? -->
+    <script src="js/ui-bootstrap-tpls.min.js"></script>
+    <script src="js/keypress.min.js"></script>
     <script src="js/underscore-min.js"></script>
-    <script src="js/java-app.js"></script>
+    <script src="js/java-app.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
 
@@ -56,12 +56,14 @@
 
                 <div ng-controller="JavadocController">
 
-                    <div ng-show="requestPending">
-                        <!-- img src="icons/ajax-loader.gif" /-->
-                        <!-- img src="icons/progress-bar.gif" / -->
-                        <div class="loading-msg">Loading ...</div>
+                    <!-- darken the screen whilst loading from the backend -->
+                    <div ng-show="requestPending" 
+                        class="modal-backdrop fade in" 
+                        ng-class="{in: animate}" 
+                        ng-style="{'z-index': 1040 + (index &amp;&amp; 1 || 0) + index*10}" 
+                        style="z-index: 1040;">
                     </div>
-                
+
                     <!-- Class/Interface/Enum/AnnotationType view -->
                     <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel) || JavadocModelUtils.isClassElement(javadocModel)">
                         <!-- Annotations on the class, if any -->
