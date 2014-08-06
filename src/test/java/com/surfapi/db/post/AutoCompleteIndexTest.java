@@ -347,7 +347,7 @@ public class AutoCompleteIndexTest {
         docs = new AutoCompleteIndex().inject(db).query( libraryId, "CaptureSystemOut", 25 );
         assertTrue( docs.isEmpty() );
         
-        assertFalse( db.getMongoDB().collectionExists( AutoCompleteIndex.buildAutoCompleteIndexName(libraryId)) );
+        assertFalse( db.getMongoDB().collectionExists( AutoCompleteIndex.getCollectionName(libraryId)) );
     }
 
     

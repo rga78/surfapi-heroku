@@ -1,9 +1,10 @@
 package com.surfapi.main.tasks;
 
-import java.util.Arrays;
+import java.util.Collection;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.surfapi.db.DB;
 import com.surfapi.db.post.CustomIndex;
 import com.surfapi.main.Task;
 import com.surfapi.main.TaskArgs;
@@ -48,19 +49,42 @@ public class BuildIndexTask extends Task<BuildIndexTask> {
         TaskArgs taskArgs = new TaskArgs(args);
 
         String libraryId = taskArgs.getStringValue("--libraryId");
-
-        for (CustomIndex customIndex : CustomIndex.getIndexes(taskArgs.getStringValue("--index")) ) {
-
-            customIndex.inject(getDb());
-
-            if ( StringUtils.isEmpty(libraryId) ) {
-                customIndex.buildIndex();
-            } else {
-                customIndex.addLibrariesToIndex(Arrays.asList(libraryId) );
-            }
+        Collection<CustomIndex<?>> customIndexes = injectAll( getDb(),
+                                                              CustomIndex.getIndexes(taskArgs.getStringValue("--index")) );
+        
+        if (StringUtils.isEmpty(libraryId)) {
+            buildFromScratch( customIndexes ) ;
+        } else {
+            addLibrary(libraryId, customIndexes );
         }
 
         return 0;
+    }
+
+    /**
+     * 
+     */
+    protected void buildFromScratch( Collection<CustomIndex<?>> customIndexes ) {
+        for (CustomIndex customIndex : customIndexes) {
+            customIndex.buildIndex();
+        }
+    }
+    
+    /**
+     * 
+     */
+    protected void addLibrary(String libraryId, Collection<CustomIndex<?>> customIndexes) {
+        getDb().forAll( libraryId, CustomIndex.getBuilders(customIndexes)) ;
+    }
+    
+    /**
+     * 
+     */
+    protected Collection<CustomIndex<?>> injectAll(DB db, Collection<CustomIndex<?>> customIndexes) {
+        for (CustomIndex customIndex : customIndexes) {
+            customIndex.inject(getDb());
+        }
+        return customIndexes;
     }
 
 

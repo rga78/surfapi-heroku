@@ -22,9 +22,12 @@ import com.surfapi.db.DB;
  *       The problem with that is several other javadoc post-processors depend
  *       on SetStubIds.  They would have to be changed to use the qualifiedNames index as well.
  *
- * TODO: Post-process cross-library setStubIds still useful for:
+ * DONE: Post-process cross-library setStubIds still useful for:
  *          overriddenMethod (not guaranteed)
  *          inheritedMethods
+ *       Nah... use ReferenceNameQuery to resolve such things.
+ *       In fact, new rule: "post-processors" are NOT allowed to modify the javadoc models.
+ *       Period.  That should simplify things and allow for perf optimizations.
  *          
  */
 public class SetStubIds implements DB.ForAll {

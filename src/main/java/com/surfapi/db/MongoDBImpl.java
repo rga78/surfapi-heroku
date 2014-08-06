@@ -140,15 +140,34 @@ public class MongoDBImpl implements DB {
      */
     @Override
     public void forAll(String collectionName, ForAll callback) {
-
+        forAll(collectionName, Arrays.asList(callback));
+    }
+    
+    /**
+     * Run callbacks against all documents in the given collection.
+     */
+    @Override
+    public void forAll(String collectionName, Collection<ForAll> callbacks) {
+        
         Log.info(this, "forAll: collection: " + collectionName);
-        callback.before(this, collectionName);
-        DBCursor dbCursor = mongoDB.getCollection(collectionName).find();
-        for (DBObject dbobj : dbCursor) {
-            callback.call( this, collectionName, dbobj.toMap() );
+        
+        for (ForAll callback : callbacks) {
+            callback.before(this, collectionName);
         }
+        
+        DBCursor dbCursor = mongoDB.getCollection(collectionName).find();
+        
+        for (DBObject dbobj : dbCursor) {
+            for (ForAll callback : callbacks) {
+                callback.call( this, collectionName, dbobj.toMap() );
+            }
+        }
+        
         dbCursor.close();
-        callback.after(this, collectionName);
+        
+        for (ForAll callback : callbacks) {
+            callback.after(this, collectionName);
+        }
     }
 
     /**

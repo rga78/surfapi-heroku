@@ -27,6 +27,7 @@
     <!-- Load scripts after the header has been rendered to improve the perceived loading time. -->
     <!-- Normally you'd load scripts at the bottom of the html document.  But that's causing the -->
     <!-- unresolved interpolations to show up in the rendered html until angular is loaded. -->
+    <!-- TODO: load these from CDNs rather than from my heroku server for perf -->
     <script src="js/angular.min.js"></script>
     <script src="js/angular-sanitize.min.js"></script>
 
@@ -432,7 +433,7 @@
                     </div>
 
 
-                    <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson"  -->
+                    <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" -->
 
                 </div>
             </div>

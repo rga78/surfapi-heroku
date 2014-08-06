@@ -150,6 +150,13 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
                                                                   .append( "qualifiedName", 1 ) );
     }
     
+    /**
+     * @return the index builder
+     */
+    public DB.ForAll getBuilder() {
+        return new IndexBuilder();
+    }
+    
     
     private class IndexBuilder implements DB.ForAll {
         
@@ -157,6 +164,7 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
         
         @Override
         public void before(DB db, String collection) {
+            Log.info(this, "before: " + collection);
             bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName());
                                 // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
         }
@@ -164,6 +172,7 @@ public class AllKnownSubclassesQuery extends CustomIndex<AllKnownSubclassesQuery
         @Override 
         public void after(DB db, String collection) {
             bulkWriter.flush();
+            ensureIndex();
         }
         
         @Override

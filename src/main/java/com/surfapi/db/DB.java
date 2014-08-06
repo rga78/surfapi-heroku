@@ -43,6 +43,11 @@ public interface DB  {
      * Run given forAll callback against every document in the given collection.
      */
     public void forAll( String collection, ForAll callback );
+    
+    /**
+     * Run given forAll callbacks against every document in the given collection.
+     */
+    public void forAll( String collection, Collection<ForAll> callbacks );
 
     /**
      * @return the obj in the given collection at the given key.

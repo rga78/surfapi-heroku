@@ -19,7 +19,15 @@ import com.surfapi.log.Log;
 /**
  * Populate the "allKnownImplementors" index from interface-name to the classes that implement them.
  *
- * TODO: This and AllKnownSubclassesQuery are almost identical.  Refactor out the pattern.
+ * DONE: This and AllKnownSubclassesQuery are almost identical.  Refactor out the pattern.
+ *       AutoCompleteIndex and ReferenceNameQuery are also very similar. 
+ *       Opportunity not only for refactoring but also perf optimization.
+ *       For example when adding a library to the DB and running it thru all these CustomIndex builders.
+ *       Instead of each CustomIndex builder doing its own DB.forAll on the new library,
+ *       do just ONE DB.forAll and call each CustomIndex builder in the callback.
+ *       DB.forAll( String collection, Arrays.asList( CustomIndexBuilder1, CustomIndexBuilder2, ...);
+ *       
+ *       
  */
 public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQuery> {
 
@@ -84,6 +92,9 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
         
         Map<String, String> library =  JavadocMapUtils.mapLibraryId(libraryId);
         
+        // This will remove all entries with _ids that match the given library (sans version)
+        // AND contain the given library's version in the _libraryVersions field.
+        // TODO: make sure _libraryVersiosn field doesn't contain dup values
         getDb().remove( getCollectionName(), new MapBuilder()
                                                     .append( "_id", buildIdsForLibraryCriteria( library ) )
                                                     .append( "_libraryVersions", new ListBuilder<String>().append( library.get("version") ) ) );
@@ -122,14 +133,25 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
                                                                   .append( "qualifiedName", 1 ) );
     }
     
+    /**
+     * @return the index builder
+     */
+    public DB.ForAll getBuilder() {
+        return new IndexBuilder();
+    }
     
+    /**
+     * 
+     */
     private class IndexBuilder implements DB.ForAll {
         
        private BulkWriter bulkWriter;
         
        @Override
        public void before(DB db, String collection) {
-           bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName());
+           Log.info( this, "before: " + collection);
+           
+           bulkWriter = new BulkWriter( (MongoDBImpl) db, getCollectionName());
                                 // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
        }
         
@@ -141,11 +163,12 @@ public class AllKnownImplementorsQuery extends CustomIndex<AllKnownImplementorsQ
        @Override 
        public void after(DB db, String collection) {
            bulkWriter.flush();
+           
+           ensureIndex();
        }
 
        public void insert(Map javadocModel) {
            if (JavadocMapUtils.isClass(javadocModel)) {
-               // getDb().save( getCollectionName(), buildDocuments(javadocModel) );
                bulkWriter.insert( buildDocuments(javadocModel) );
            }
        }

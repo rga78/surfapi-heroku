@@ -121,13 +121,13 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
      */
     public ReferenceNameQuery buildIndex() {
 
-        Log.info( this, "build: building the referenceName index" );
+        Log.info( this, "buildIndex: building the referenceName index" );
         
         getDb().drop( getCollectionName() );
         
         getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder() );
         
-        ensureIndexedColumns();
+        ensureIndex();
         
         return this;
     }
@@ -135,7 +135,7 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
     /**
      * Create the index on the _qn field, if one doesn't already exist.
      */
-    protected void ensureIndexedColumns() {
+    protected void ensureIndex() {
         getDb().createIndex( getCollectionName() , new MapBuilder().append( "_qn", 1 )
                                                                                  .append("_id", -1) );
     }
@@ -145,9 +145,11 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
      */
     public ReferenceNameQuery addLibraryToIndex( String libraryId ) {
 
+        Log.info( this, "addLibraryToIndex: " + libraryId);
+
         getDb().forAll( Arrays.asList(libraryId) , new IndexBuilder() );
 
-        ensureIndexedColumns();
+        ensureIndex();
         
         return this;
     }
@@ -168,6 +170,14 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
     }
 
     /**
+     * @return the index builder
+     */
+    public DB.ForAll getBuilder() {
+        return new IndexBuilder();
+    }
+    
+    
+    /**
      * Builds the index.
      */
     protected class IndexBuilder implements DB.ForAll {
@@ -176,6 +186,7 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
         
         @Override
         public void before(DB db, String collection) {
+            Log.info(this, "before: " + collection);
             bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName());
                                     // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
         }
@@ -197,6 +208,7 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
         @Override 
         public void after(DB db, String collection) {
             bulkWriter.flush();
+            ensureIndex();
         }
         
         /**

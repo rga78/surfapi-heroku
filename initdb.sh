@@ -36,4 +36,25 @@ MONGOLAB_TEST=mongodb://localhost/test
 # TODO: not all source files have javadoc
 ./sajavadoc.sh $MONGOLAB_TEST /java/javaee/6.0 -sourcepath /fox/tmp/surfapi-heroku/javaee-api-6.0 -subpackages javax
 
+./sajavadoc.sh $MONGOLAB_TEST /java/junit/4.11 \
+    -sourcepath "/fox/tmp/surfapi-heroku/junit/src/main/java;/fox/tmp/surfapi-heroku/hamcrest-all-1.3" \
+    -subpackages org.junit.experimental \
+    -subpackages org.junit.matchers \
+    -subpackages org.junit.rules \
+    -subpackages org.junit.runner \
+    -subpackages org.junit.runners \
+    org.junit
+
+./sajavadoc.sh $MONGOLAB_TEST /java/hamcrest/1.3 -sourcepath "/fox/tmp/surfapi-heroku/hamcrest-all-1.3" \
+    -subpackages org.hamcrest.beans \
+    -subpackages org.hamcrest.collection \
+    -subpackages org.hamcrest.core \
+    -subpackages org.hamcrest.integration \
+    -subpackages org.hamcrest.internal \
+    -subpackages org.hamcrest.number \
+    -subpackages org.hamcrest.ojbect \
+    -subpackages org.hamcrest.text \
+    -subpackages org.hamcrest.xml \
+    org.hamcrest
+
 

@@ -1,6 +1,7 @@
 package com.surfapi.db.post;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +46,20 @@ public abstract class CustomIndex<T extends CustomIndex> {
         
         return retMe;
     }
+    
+    /**
+     * @return List of CustomIndex.getBuilder()
+     */
+    public static List<DB.ForAll> getBuilders(Collection<CustomIndex<?>> customIndexes) {
+        List<DB.ForAll> retMe = new ArrayList<DB.ForAll>();
+        
+        for (CustomIndex customIndex : customIndexes) {
+            retMe.add( customIndex.getBuilder() );
+        }
+        
+        return retMe;
+    }
+    
     
     /**
      * @return the list of all custom indexes whose class name matches the given filter.
@@ -137,7 +152,10 @@ public abstract class CustomIndex<T extends CustomIndex> {
        return (T) this;
     }
     
-    
+    /**
+     * @return the builder, which iterates over the models in a library.
+     */
+    public abstract DB.ForAll getBuilder();
     
     
 }

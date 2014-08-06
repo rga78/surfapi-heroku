@@ -1,8 +1,8 @@
 package com.surfapi.db.post;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +41,7 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
      */
     public AutoCompleteIndex buildIndexForLang( final String lang ) {
         
-        String indexName = buildAutoCompleteIndexNameForLang( lang ) ;
+        String indexName = getCollectionNameForLang( lang ) ;
 
         getDb().drop( indexName );
         
@@ -49,37 +49,16 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         
         // Note: we must processes all libraries -- even different versions of the same library --
         // since different versions may contain different classes.
-        getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder(indexName) );
-        
-        getDb().createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
-        
-        buildIndexesForLibraries( getDb().getLibraryIds(lang) );
+        getDb().forAll( (Collection<String>) Cawls.pluck( getDb().getLibraryList("java"), "_id"), new IndexBuilder() );
         
         return this;
     }
     
     /**
-     * Build auto-complete indexes for all the given libraries.
+     * Create the index on the _searchName field for the given auto-complete index collection.
      */
-    protected void buildIndexesForLibraries(Collection<String> libraryIds) {
-        for (String libraryId : libraryIds) {
-            buildIndexForLibrary(libraryId);
-        }
-    }
-
-    /**
-     * Build the auto-complete index for the given library.
-     */
-    protected void buildIndexForLibrary( String libraryId ) {
-
-        String indexName = buildAutoCompleteIndexName( libraryId );
-        getDb().drop( indexName  );
-        
-        Log.info(this, "buildIndexForLibrary: building index for library " + libraryId);
-
-        getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
-        
-        getDb().createIndex( indexName, new MapBuilder().append( "_searchName", 1 ) );
+    protected void ensureIndex(String collectionName) {
+        getDb().createIndex( collectionName, new MapBuilder().append( "_searchName", 1 ) );
     }
 
     /**
@@ -91,16 +70,10 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
      * An index for the library itself is also built.
      */
     public AutoCompleteIndex addLibraryToIndex(String libraryId) {
-
-        Map library =  JavadocMapUtils.mapLibraryId(libraryId);
-        
-        String indexName = buildAutoCompleteIndexNameForLang( (String) library.get("lang") ) ;
             
-        Log.info(this, "addLibraryToIndex: adding library " + libraryId + ", " + library.get("name"));
+        Log.info(this, "addLibraryToIndex: " + libraryId);
 
-        getDb().forAll( Arrays.asList(libraryId), new IndexBuilder( indexName ));
-        
-        buildIndexForLibrary(libraryId);
+        getDb().forAll( libraryId, new IndexBuilder());
         
         return this;
         
@@ -123,14 +96,14 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         // TODO: handle libraries with multiple versions
         if (getDb().getLibraryVersions( library.get("lang"), library.get("name") ).size() == 1) {
             
-            String indexName = buildAutoCompleteIndexNameForLang( (String) library.get("lang") ) ;
+            String indexName = getCollectionNameForLang( (String) library.get("lang") ) ;
         
             getDb().remove( indexName, new MapBuilder<String, String>()
                                               .append( JavadocMapUtils.LibraryFieldName + ".name", library.get("name")) );
         }
         
         // Remove library's index
-        getDb().drop( buildAutoCompleteIndexName(libraryId) );
+        getDb().drop( getCollectionName(libraryId) );
         
         return this;
      }
@@ -138,15 +111,15 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
     /**
      * @return the auto-complete index collection name for the given collection
      */
-    public static String buildAutoCompleteIndexName( String collectionName ) {
-        return collectionName + "/autoCompleteIndex";
+    public static String getCollectionName( String libraryId ) {
+        return libraryId + "/autoCompleteIndex";
     }
 
     /**
      * @return the auto-complete index collection name for the given language
      */
-    public static String buildAutoCompleteIndexNameForLang( String lang ) {
-        return lang + "/autoCompleteIndex";
+    public static String getCollectionNameForLang( String lang ) {
+        return getCollectionName(lang);
     }
     
 
@@ -159,7 +132,7 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
      * @return the results.
      */
     public List<Map> query(String indexName, String text, int limitResults) {
-        return getDb().find( buildAutoCompleteIndexName( indexName ), 
+        return getDb().find( getCollectionName( indexName ), 
                              new MapBuilder().append( "_searchName", buildSearchNameCriteria(text) ),
                              limitResults );
     }
@@ -181,38 +154,44 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
     }
     
     /**
+     * @return the index builder
+     */
+    public DB.ForAll getBuilder() {
+        return new IndexBuilder();
+    }
+    
+    
+    /**
      * Builds the index.
      */
     protected class IndexBuilder implements DB.ForAll {
         
         /**
-         * The index (collection) name.
-         */
-        private String indexName;
-        
-        /**
-         * bulk writes.
+         * bulk writes for the library-specific index.
          */
         private BulkWriter bulkWriter;
         
+        /**
+         * bulk writes to the lang index.
+         */
+        private BulkWriter bulkWriterLang;
+        
         @Override
         public void before(DB db, String collection) {
-            bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), indexName);
-                                // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
+            Log.info(this, "before: " + collection);
+            bulkWriter = new BulkWriter( (MongoDBImpl) getDb(), getCollectionName(collection));
+            bulkWriterLang = new BulkWriter( (MongoDBImpl) getDb(), 
+                                             getCollectionNameForLang( JavadocMapUtils.mapLibraryId(collection).get("lang") ));
+                                                // .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
         }
 
         @Override 
         public void after(DB db, String collection) {
             bulkWriter.flush();
-        }
-        
-        /**
-         * CTOR.
-         * 
-         * @param indexName
-         */
-        public IndexBuilder(String indexName) {
-            this.indexName = indexName;
+            bulkWriterLang.flush();
+            
+            ensureIndex( getCollectionName(collection) );
+            ensureIndex( getCollectionNameForLang( JavadocMapUtils.mapLibraryId(collection).get("lang") ) );
         }
         
         /**
@@ -221,7 +200,7 @@ public class AutoCompleteIndex extends CustomIndex<AutoCompleteIndex> {
         @Override
         public void call(DB db, String collection, Map obj) {
             for ( Map indexedObj : buildIndexedDocuments( new JavadocObject( obj ) ) ) {
-               //  db.save( indexName, indexedObj );
+                bulkWriterLang.insert( new HashMap(indexedObj) );
                 bulkWriter.insert( indexedObj );
             }
         }
