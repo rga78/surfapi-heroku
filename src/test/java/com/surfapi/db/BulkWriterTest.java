@@ -109,6 +109,11 @@ public class BulkWriterTest {
         bulkWriter.insert( new MapBuilder().append( "_id", "2") );
         bulkWriter.flush();
         
+        // Kind of hackish.  Since the write is unacknowledged, it goes async, which means
+        // it may not be done by the time we get to the assertNotNull below.  So wait a sec.
+        // That'll probably be enough.
+        Thread.sleep( 1 * 1000);
+
         assertNotNull( db.read("test.collection", "1") );
         assertNotNull( db.read("test.collection", "2") );
         

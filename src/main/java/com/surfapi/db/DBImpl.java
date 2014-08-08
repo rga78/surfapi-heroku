@@ -99,6 +99,14 @@ public class DBImpl extends ConcurrentHashMap<String, Map<String, Map>> implemen
     }
     
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map read(String collection, String key, Map<String, Integer> fields) {
+        return read(collection, key);
+    }
+    
+    /**
      * @return the obj with the given _id (note the _id contains the collection name).
      */
     @Override

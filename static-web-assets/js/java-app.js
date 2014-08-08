@@ -6,10 +6,121 @@ angular.module( "JavaApp", ['ui.bootstrap',
  * TODO: I don't really know what html5 mode is.  I should learn that.
  *       Something about the history api.  More functionality.  Or something.
  *       One thign I notice is the URL is weird... the hash string is always
- *       HTML-escaped for some reason.
+ *       HTML-escaped/url-encoded for whatever reason.
  */
 .config(['$locationProvider', function($locationProvider) {
     $locationProvider.html5Mode(true);
+}])
+
+
+/**
+ * This service listens and reacts to hash updates.
+ *
+ * Currently there are only two types of hash updates:
+ * 1. for fetching a javadoc model
+ * 2. for running the refernece query service, which eventually resolves
+ *    to a javadoc model.
+ */
+.factory("HashListener", [ "$rootScope", "$location", "Utils", "ReferenceQueryService", "RestService", "Log",
+                            function($rootScope, $location, Utils, ReferenceQueryService, RestService, Log) {
+
+    var _this = this;
+    this.logging = { prefix: "HashListener" };
+    Log.log(_this, "<init>: entry");
+
+    /**
+     * Callback method when the watcher detects that the hash has changed.
+     * REmember that watchers aren't triggered by events but rather are invoked
+     * during $digest().  $digest is called at various strategic times by angular.
+     * Would be good to know when those times are. 
+     */
+    var onHashChange = function(newHash, oldHash) {
+        Log.log(_this, "onHashChange: " + newHash);
+
+        if ( Utils.isEmpty(newHash) ) {
+            fetchJavadocModel("/java");
+
+        } else if (startsWith(newHash, "/java")) {
+            fetchJavadocModel(newHash);
+
+        } else if (startsWith(newHash, "/q/java/qn/")) {
+            requestPending(true);
+            ReferenceQueryService.getReferenceType(newHash);
+        }
+    };
+
+    
+    /**
+     * @return true if the given str starts with the given prefix.
+     */
+    var startsWith = function(str, prefix) {
+        return str.indexOf(prefix) == 0;
+    }
+
+    /**
+     * Set the $rootScope.requestPending flag which may trigger view changes.
+     * TODO: should this be an event instead?
+     */
+    var requestPending = function(isPending) {
+        Log.log(_this, "requestPending: " + isPending);
+        $rootScope.requestPending = isPending;
+    };
+
+    /**
+     * Fetch a javadocModel with the given _id from the DB via the RestService.
+     */
+    var fetchJavadocModel = function(_id) {
+
+        scrollTop();
+
+        requestPending(true);
+
+        RestService.get( _id,  { params: { "methods": "0", "allInheritedMethods": "0" } } )
+                   .success( fetchJavadocModelSuccess )
+                   .finally( function() {
+                      requestPending(false);
+                   }) ;
+    };
+
+    /**
+     * Scroll to the top of the document.
+     */
+    var scrollTop = function() {
+        document.body.scrollTop = document.documentElement.scrollTop = 0;
+    }
+
+    /**
+     * Called upon successfully fetching a javadoc model from the RestService.
+     */
+    var fetchJavadocModelSuccess = function(javadocModel) {
+        Log.log(_this, "fetchJavadocModelSuccess: " + javadocModel._id);
+
+        $rootScope.$broadcast( "$saJavadocModelChange", javadocModel);
+    }
+
+    // Listen for hash changes.
+    // Note: I was having problems before when the $watch registration was made 
+    //       a little higher up in this function, before onHashChange was defined.
+    //       OF COURSE I WAS!  I'm registering a callback by name (onHashChange) that
+    //       wasn't defined yet.  How's angular supposed to register and callback a
+    //       function that isn't defined yet.  DUH! stupid stupid.
+    //
+    // Note: the watch listener will be invoked at least once to "initialize" it.
+    // From angular doc:
+    //      After a watcher is registered with the scope, the listener fn is called asynchronously 
+    //      (via $evalAsync) to initialize the watcher
+    //      The $evalAsync makes no guarantees as to when the expression will be executed, only that:
+    //          * it will execute after the function that scheduled the evaluation (preferably before DOM rendering).
+    //          * at least one $digest cycle will be performed after expression execution.
+    $rootScope.$watch(function() { return $location.hash(); }, 
+                      onHashChange);
+
+    Log.log(_this, "<init>: exit");
+
+    /**
+     * There's nothing to return from this service.
+     */
+    return {};
 }])
 
 
@@ -24,72 +135,77 @@ angular.module( "JavaApp", ['ui.bootstrap',
  * just be returned (no 'new'), which is fine for my purposes.  I.e factory is simpler.
  * Doesn't use new.  If you don't need new, use factory.
  */
-.service("AutoCompleteService", ['$http', function($http) {
+.factory("AutoCompleteService", ['$http', function($http) {
 
     var buildUrl = function(str, indexName) {
         indexName = indexName || "java";
         return "rest/autoComplete/index?str=" + str + "&index=" + indexName; 
     }
 
-    this.get = function(str, indexName) {
+    var onError = function(data, status, headers, config) {
+        alert("AutoCompleteService (url = " + config.url + ") didn't work: " + status + ": " + data);
+        // TODO: create modal with option to send error message to me for diagnosing.
+    };
+
+    var get = function(str, indexName) {
         return $http.get( buildUrl(str, indexName)  )    
-                    .error( function(data, status, headers, config) {
-                        alert("AutoCompleteService.get(" + str +") didn't work: " + status + ": " + data);
-                    });
+                    .error( onError );
     }
+
+    return {
+        get: get 
+    };
 }])
 
 /**
+ * Thin wrapper around $http calls to the REST api.
  *
+ * TODO: not sure if this really serves a purpose other than wrapping $http calls
+ *       with tracing and an onError function.
  */
-.service("DbService", [ '$http', '$rootScope', 'Log', function($http, $rootScope, Log) {
+.factory("RestService", [ '$http', 'Log', function($http, Log) {
 
     var _this = this;
-    this.logging = { prefix: "DbService" };
+    _this.logging = { prefix: "RestService" };
 
     var onSuccess = function(data) {
-        Log.log(_this, "onSuccess: ");
-        $rootScope.$emit( "$saJavadocModelChange", data );
+        Log.log(_this, "onSuccess: " + data._id);
     }
 
-    var buildUrl = function(_id) {
-        return "rest" + _id;
+    var buildUrl = function(uri) {
+        return "/rest" + uri;
     }
+
+    var onError = function(data, status, headers, config) {
+        alert("RestService (url = " + config.url + ") didn't work: " + status + ": " + data);
+        // TODO: create modal with option to send error message to me for diagnosing.
+    };
     
-    var get = function(_id) {
-        _id = _id.replace(/\?/g, "%3F");
-
-        Log.log(this, "get: " + _id);
-
-        return $http.get( buildUrl(_id) )
-                    .success( onSuccess )
-                    .error( function(data, status, headers, config) {
-                        alert("DbService.get(" + _id + ") didn't work: " + status + ": " + data);
-                        // TODO: create modal with option to send error message to me for diagnosing.
-                    });
-    }
-
     /**
-     * Same as get() except without the event emit.
+     * Simple wrapper around $http.get.
+     *
+     * @param uri to pass to $http.get
+     * @param config to pass to $http.get
+     *
+     * @return the promise returned from $http.get
      */
-    var getQuietly = function(_id) {
-        _id = _id.replace(/\?/g, "%3F");
+    var get = function(uri, config) {
 
-        Log.log(this, "getQuietly: " + _id);
+        Log.log(_this, "get: " + uri + ", " + angular.toJson(config));
 
-        return $http.get( buildUrl(_id) )
-                    .error( function(data, status, headers, config) {
-                        alert("DbService.get(" + _id + ") didn't work: " + status + ": " + data);
-                        // TODO: create modal with option to send error message to me for diagnosing.
-                    });
+        return $http.get( buildUrl(uri), config )
+                    .success( onSuccess )
+                    .error( onError );
     }
 
-    this.get = get;
-    this.getQuietly = getQuietly;
+    return {
+        get: get
+    };
+
 }])
 
 /**
- *
+ * Format complex types, method parameter lists, etc.
  */
 .factory("Formatter", [ "_", "Utils", "JavadocModelUtils", "Log", 
                         function(_, 
@@ -441,7 +557,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
 /**
  * Dumping ground for un-categorizable stuff.
  */
-.service("Utils", [ "_", function(_) {
+.factory("Utils", [ "_", function(_) {
 
     var prevLocation = "";
 
@@ -465,17 +581,19 @@ angular.module( "JavaApp", ['ui.bootstrap',
     }
 
     // Exported functions.
-    this.isEmpty = isEmpty;
-    this.setLocation = setLocation;
-    this.getPrevLocation = getPrevLocation;
-    this.parseLibraryFromLocation = parseLibraryFromLocation;
+    return { 
+        isEmpty: isEmpty,
+        setLocation: setLocation,
+        getPrevLocation: getPrevLocation,
+        parseLibraryFromLocation: parseLibraryFromLocation
+    };
 }])
 
 
 /**
  * Convenience methods for handling a javadoc models.
  */
-.service("JavadocModelUtils", ["Utils", "_", function(Utils,_) {
+.factory("JavadocModelUtils", ["Utils", "_", function(Utils,_) {
 
     var isEmpty = Utils.isEmpty;
 
@@ -605,42 +723,46 @@ angular.module( "JavaApp", ['ui.bootstrap',
     }
 
     // Exported functions.
-    this.getId = getId;
-    this.getMetaType = getMetaType;
-    this.getPackageId = getPackageId;
-    this.getLibraryId = getLibraryId;
-    this.getClassFor = getClassFor;
-    this.getPackageFor = getPackageFor;
-    this.getQualifiedName = getQualifiedName;
-    this.getName = getName;
-    this.getNameAndDimension = getNameAndDimension;
-    this.isMethod = isMethod;
-    this.isInterface = isInterface;
-    this.isClass = isClass;
-    this.isClassElement = isClassElement;
-    this.isPackage = isPackage;
-    this.isLibrary = isLibrary;
-    this.isLibraryVersions = isLibraryVersions;
-    this.isLang = isLang;
-    this.getUnformattedTags = getUnformattedTags;
-    this.getReferenceName = getReferenceName;
-    this.isPrimitiveType = isPrimitiveType;
-    this.isParameterizedType = isParameterizedType;
-    this.isSimpleTypeParameter = isSimpleTypeParameter;
+    return {
+        getId: getId,
+        getMetaType: getMetaType,
+        getPackageId: getPackageId,
+        getLibraryId: getLibraryId,
+        getClassFor: getClassFor,
+        getPackageFor: getPackageFor,
+        getQualifiedName: getQualifiedName,
+        getName: getName,
+        getNameAndDimension: getNameAndDimension,
+        isMethod: isMethod,
+        isInterface: isInterface,
+        isClass: isClass,
+        isClassElement: isClassElement,
+        isPackage: isPackage,
+        isLibrary: isLibrary,
+        isLibraryVersions: isLibraryVersions,
+        isLang: isLang,
+        getUnformattedTags: getUnformattedTags,
+        getReferenceName: getReferenceName,
+        isPrimitiveType: isPrimitiveType,
+        isParameterizedType: isParameterizedType,
+        isSimpleTypeParameter: isSimpleTypeParameter 
+    };
 }])
 
 
 /**
  * "service" for transforming models (returned from Db) into ViewModels
  * (enhanced with fields specific for view rendering).
+ *
+ * TODO: get rid of this.
  */
-.service("ViewModelService", ["_", function(_) {
+.factory("ViewModelService", ["_", function(_) {
 
-    this.transform = function(model) {
+    var transform = function(model) {
         return model;
     };
 
-    this.getScopeName = function(model) {
+    var getScopeName = function(model) {
         if (model.metaType == "constructor") {
             return "methodDoc";
         } else if (model.metaType == "interface") {
@@ -656,6 +778,11 @@ angular.module( "JavaApp", ['ui.bootstrap',
         }
     };
 
+    return {
+        transform: transform,
+        getScopeName: getScopeName
+    };
+
 }])
 
 /**
@@ -663,15 +790,16 @@ angular.module( "JavaApp", ['ui.bootstrap',
  * to packages/classes/methods/fields by querying the DB for the qualified name of the 
  * reference type. 
  */
-.service("ReferenceQueryService", ["DbService", "JavadocModelUtils", "$location", "$window", "$modal", "Utils", "_", "Log",
-                                  function(DbService, 
+.factory("ReferenceQueryService", ["RestService", "JavadocModelUtils", "$location", "$window", "$modal", "Utils", "_", "Log", "$timeout",
+                                  function(RestService, 
                                            JavadocModelUtils, 
                                            $location, 
                                            $window, 
                                            $modal, 
                                            Utils, 
                                            _,
-                                           Log) {
+                                           Log,
+                                           $timeout) {
 
     var openModalMessage = function( referenceName ) {
         var modalInstance = $modal.open({
@@ -709,7 +837,18 @@ angular.module( "JavaApp", ['ui.bootstrap',
         //
         // Both update the location hash, which will trigger the watch in
         // JavadocController to update the page.
+        //
+        // TODO: sometimes the modal-backdrop lingers around even after the
+        //       modal itself has disappeared.  It's especially noticeable when 
+        //       looking up DBCollection (mongo) from another library.  The backdrop
+        //       lingers until after the REST call to retrieve DBCollection's methods.
+        //       Not sure what the problem is.
+        //       Actually, the backdrop lingers even if the modal is cancelled,
+        //       which would trigger the second function below.  So maybe it has 
+        //       something to do with processing the location update.
+        //       maybe i should put that on a timeout?
         modalInstance.result.then( function(selectedModel) {
+            // $timeout( function() { $location.hash( selectedModel._id ).replace(); }, 1 );
             $location.hash( selectedModel._id ).replace();
         }, function () {
             $window.history.back();
@@ -751,7 +890,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
         var referenceName = id.substring( "/q/java/qn/".length );
         Log.log(this, "getReferenceType: referenceName: " + referenceName);
 
-        DbService.getQuietly( id )
+        RestService.get( id )
                  .success( function(models) { 
                      getReferenceTypeOnSuccess(models, referenceName); 
                  });
@@ -767,15 +906,18 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
         Log.log(this, "resolveFirstId: " + referenceName);
         var restUrl = "/q/java/qn/" + referenceName;
-        return DbService.getQuietly( restUrl )
+
+        return RestService.get( restUrl )
                  .then( function(response) {
                      var models = response.data;
                      return (models.length > 0) ? models[0]._id : null;
                  });
     }
 
-    this.getReferenceType = getReferenceType;
-    this.resolveFirstId = resolveFirstId;
+    return {
+        getReferenceType: getReferenceType,
+        resolveFirstId: resolveFirstId
+    };
 }])
 
 /**
@@ -846,8 +988,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
      */
     var callAutoCompleteService = function(str, onChangeCount) {
 
-        Log.log(_this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName
-                       + ", onChangeCount: " + onChangeCount + ", onChangeCounter: " + _this.onChangeCounter);
+        // -rx- Log.log(_this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName
+        // -rx-                + ", onChangeCount: " + onChangeCount + ", onChangeCounter: " + _this.onChangeCounter);
 
         AutoCompleteService.get( str, $scope.autoCompleteIndexName )
              .success( function(data) {
@@ -875,7 +1017,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
      * If it's the ESC key, clear the input.
      */
     var onKeypress = function($event) {
-        Log.log(_this, "onKeypress: keycode: " + $event.keyCode + ", $scope.str: " + $scope.str);
+        // -rx- Log.log(_this, "onKeypress: keycode: " + $event.keyCode + ", $scope.str: " + $scope.str);
         if ($event.keyCode == 27) {
             // ESC key
             clearListing();
@@ -885,7 +1027,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
     var onChange = function() {
         ++_this.onChangeCounter;
 
-        Log.log(_this, "onChange: $scope.str: " + $scope.str + ", onChangeCounter: " + _this.onChangeCounter);
+        // -rx- Log.log(_this, "onChange: $scope.str: " + $scope.str + ", onChangeCounter: " + _this.onChangeCounter);
 
         if (Utils.isEmpty($scope.str)) {
             clearListing();
@@ -899,102 +1041,144 @@ angular.module( "JavaApp", ['ui.bootstrap',
     $scope.onKeypress = onKeypress;
     $scope.onChange = onChange;
     $scope.getReferenceName = JavadocModelUtils.getReferenceName;
+    $scope.Utils = Utils;
    
 }])
 
 
 /**
  *
- * TODO: use array sytax for specifying dependencies so that the code still works
- *       after minify-ing (which will likely change the names of the parms).
+ * So what does thsi controller actually do?
+ *
+ * It gets instantiated when its ng-controller is encountered by angular
+ * during the $compile phase.
+ *
+ * It gets injected with all those components (lots...)
+ *
+ * It attaches the Formatter and JavadocModelUtils to the $scope. 
+ *  - This is basically the primary function of a controller - to basically add
+ *    behavior to the scope.  To define functions.  To set the scope data.
+ *     
+ * It sets up a watcher on location.hash.  Essentially this is a hash router.
+ * Other pieces of the app update the hash.  This watcher processes those updates.
+ * This could be done by a service or factory.  Doesn't need to be done by the controller.  
+ *
+ * Q: when do services/factories get instantiated?  Lazily, whenever they're first injected.  
+ *    They are singletons.  The same object is injected everywhere.  This provides one way
+ *    to share data between controllers.
+ *
+ * When the watcher is invoked it calls the REST service to obtain data from the server.
+ * Typically this data is a javadoc model, although sometimes it's a query result, e.g.
+ * the ReferenceServiceQuery or AllKnownSubclasses query.
+ *
+ * If it's a javadocModel, then it gets attached to the $scope associated with JavadocController.
+ *
+ * So... if the watcher were provided by a view-independent service... and it handled hash 
+ * changes... which resulted in a REST call... which possibly returned a javadoc model...
+ * then the JavadocController would want to register a callback function to be invoked 
+ * whenever a new javadoc model showed up.  Conveniently we have an event for that, 
+ * $saJavadocModelChange, which is emitted by the RestService.  So the JavadocController
+ * really should just be listening for $saJavadocModelChange events.
+ *
+ * A view-independent service should handle hash updates.  This is essentially what ngRoute does.  
+ * ngRoute just doesn't fit my needs however.
+ * 
+ *
  */
-.controller( "JavadocController", [ "$scope", "$rootScope", "$location", "DbService", "ViewModelService", 
-                                    "Utils", "Formatter", "ReferenceQueryService", "JavadocModelUtils", "Log",
+.controller( "JavadocController", [ "$scope", "$rootScope", "$location", "RestService", "ViewModelService", 
+                                    "Utils", "Formatter", "ReferenceQueryService", "JavadocModelUtils", "Log", "$http", "HashListener",
                                   function($scope, 
                                            $rootScope, 
                                            $location, 
-                                           DbService, 
+                                           RestService, 
                                            ViewModelService, 
                                            Utils, 
                                            Formatter,
                                            ReferenceQueryService,
                                            JavadocModelUtils,
-                                           Log) {
+                                           Log,
+                                           $http,
+                                           HashListener) {
 
     var _this = this;
-
-    var requestPending = function(isPending) {
-        $scope.requestPending = isPending;
-    };
-                                          
-    // Listen for hash changes.
-    $scope.$watch(function() {
-                      return $location.hash();
-                  },
-                  function(id) {
-                      // -rx- Log.log(_this, "$watch.callback: hash: " + id);
-
-                      if ( Utils.isEmpty(id) ) {
-                          fetchJavadoc("/java");
-                      } else if (id.indexOf("/java") == 0) {
-                          fetchJavadoc(id);
-                      } else if (id.indexOf("/q/java/qn/") == 0) {
-                          requestPending(true);
-                          ReferenceQueryService.getReferenceType(id);
-                      }
-                  });
+    _this.logging = { prefix: "JavadocController" };
+    Log.log(_this, "<init>: entry");
 
     // Export functions to scope.
     $scope.Formatter = Formatter;
     $scope.JavadocModelUtils = JavadocModelUtils;
+    $scope.Utils = Utils;
 
-    // Export functions to rootScope.
-    $rootScope.isEmpty = Utils.isEmpty;
-    
     /**
-     * wrapper function around DbService.get with callbacks for pushing the result
-     * into the $scope.
-     *
-     * TODO: look into using $resource - can bind returned object into scope.
+     * Called whenever an $saJavadocModelChange event is triggered
      */
-    var fetchJavadoc = function(id) {
+    var onJavadocModelChange = function(event, javadocModel) {
+        Log.log(_this, "onJavadocModelChange: " + javadocModel._id);
 
-        scrollTop();
+        // Update the scope
+        $scope.javadocModel = javadocModel;  
+        $scope[ ViewModelService.getScopeName(javadocModel) ] = ViewModelService.transform( javadocModel );
 
-        requestPending(true);
+        if ( JavadocModelUtils.isClass( javadocModel ) ) {
 
-        DbService.get( id )
-                 .success( function(data) {
-                     
-                    // -rx- $scope.javadocModel = {};
-                    $scope.javadocModel = data;  
+            // Follow-up calls to fetch the class's methods and allInheritedMethods.
+            // These fields are fetched separately for "perceived performance" purposes.
+            // They tend to be huge.  So we first fetch the model w/o them, to get the
+            // rendering process started, then the rendering is finished off when these
+            // requests are fulfilled.
+            RestService.get( javadocModel._id, { params: { "methods": "1" } } )
+                       .success( function(model) {
+                            Log.log(_this, "onJavadocModelChange.fetchMethodsSuccess: " + model._id + " =? " + $scope.javadocModel._id);
 
-                    // -rx- $scope[ ViewModelService.getScopeName(data) ] = {};
-                    $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
-                 }).finally( function() {
-                    requestPending(false);
-                 }) ;
-    };
+                            // Make sure the scope's javadocModel hasn't changed on us..
+                            if (model._id == $scope.javadocModel._id) {
+                                $scope.javadocModel.methods = model.methods ;
+                            }
+                        });
 
-    var scrollTop = function() {
-        document.body.scrollTop = document.documentElement.scrollTop = 0;
+            RestService.get( javadocModel._id, { params: { "allInheritedMethods": "1" } } )
+                       .success( function(model) {
+                            Log.log(_this, "onJavadocModelChange.fetchAllInheritedMethodsSuccess: " + model._id + " =? " + $scope.javadocModel._id);
+
+                            // Make sure the scope's javadocModel hasn't changed on us..
+                            if (model._id == $scope.javadocModel._id) {
+                                $scope.javadocModel.allInheritedMethods = model.allInheritedMethods;
+                            }
+                        });
+
+        }
     }
 
+    /**
+     * Listen for changes to the javadoc model on display.
+     *
+     * Note: REMEMBER to define the function *BEFORE* you pass it to $on(). Otherwise
+     *       how will angular register and callback a function that isn't defined yet??
+     *       Seems obvious but I've made this mistake before...
+     */
+    $scope.$on( "$saJavadocModelChange", onJavadocModelChange );
+
+    Log.log(_this, "<init>: exit");
 }])
 
 
 /**
  *
  */
-.controller( "AllKnownSubclassesController", [ "$scope", "$rootScope", "DbService", "JavadocModelUtils", "_", 
+.controller( "AllKnownSubclassesController", [ "$scope", "$rootScope", "RestService", "JavadocModelUtils", "_", "Log",
                                              function($scope, 
                                                       $rootScope,
-                                                      DbService,
+                                                      RestService,
                                                       JavadocModelUtils,
-                                                      _) {
+                                                      _,
+                                                      Log) {
 
+                          
     // initialize scope data
     $scope.allKnownSubclasses = [];
+
+    var _this = this;
+    _this.logging = { prefix: "AllKnownSubclassesController" };
 
     var buildUrl = function(model) {
         return "/q/java/allKnownSubclasses/" + JavadocModelUtils.getQualifiedName( model );
@@ -1007,7 +1191,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
         $scope.allKnownSubclasses = [];
 
-        DbService.getQuietly( buildUrl(model || $scope.javadocModel) )
+        RestService.get( buildUrl(model || $scope.javadocModel) )
                  .success( function(data) {
                      // Note: the models are modified in place.
                      _.map( data, function(model) { model._id = null; return model; } );
@@ -1021,6 +1205,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
      * Upon change, update the AllKnownSubclasses view
      */
     $rootScope.$on( "$saJavadocModelChange", function(event, model) {
+        Log.log(_this, "saJavadocModelChange event: " + model._id);
         fetchSubclasses(model);  
     });
 
@@ -1030,10 +1215,10 @@ angular.module( "JavaApp", ['ui.bootstrap',
 /**
  *
  */
-.controller( "AllKnownImplementorsController", [ "$scope", "$rootScope", "DbService", "JavadocModelUtils", "_", 
+.controller( "AllKnownImplementorsController", [ "$scope", "$rootScope", "RestService", "JavadocModelUtils", "_", 
                                                function($scope, 
                                                         $rootScope,
-                                                        DbService,
+                                                        RestService,
                                                         JavadocModelUtils,
                                                         _) {
 
@@ -1051,7 +1236,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
         $scope.allKnownImplementors = []
 
-        DbService.getQuietly( buildUrl(model || $scope.javadocModel) )
+        RestService.get( buildUrl(model || $scope.javadocModel) )
                  .success( function(data) {
                      // Note: the models are modified in place
                      _.map( data, function(model) { model._id = null; return model; } );
@@ -1076,9 +1261,9 @@ angular.module( "JavaApp", ['ui.bootstrap',
 /**
  *
  */
-.controller( "MethodController", [ "$scope", "DbService", "ViewModelService", "_", "Utils", "JavadocModelUtils", "ReferenceQueryService",
+.controller( "MethodController", [ "$scope", "RestService", "ViewModelService", "_", "Utils", "JavadocModelUtils", "ReferenceQueryService",
                                  function($scope, 
-                                          DbService, 
+                                          RestService, 
                                           ViewModelService, 
                                           _, 
                                           Utils, 
@@ -1121,7 +1306,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
         $scope.showFullDocToggle = !$scope.showFullDocToggle;
 
         if ($scope.showFullDocToggle) {
-            DbService.getQuietly( _id )
+            RestService.get( _id )
                             .success( function(data) {
                                $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
                                $scope.model = data;
@@ -1243,14 +1428,18 @@ angular.module( "JavaApp", ['ui.bootstrap',
 /**
  *
  */
-.controller( "NavLibraryController", [ "$scope", "$rootScope", "JavadocModelUtils", "DbService", "Log",
+.controller( "NavLibraryController", [ "$scope", "$rootScope", "JavadocModelUtils", "RestService", "Log", "Utils",
                                      function($scope, 
                                               $rootScope, 
                                               JavadocModelUtils, 
-                                              DbService,
-                                              Log) {
+                                              RestService,
+                                              Log,
+                                              Utils) {
 
     var _this = this;
+
+    // Export function to scope.
+    $scope.Utils = Utils;
 
     var currentLibraryId = null;
     var currentPackageId = null;
@@ -1280,6 +1469,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
                 break;
             // Everything else is a javadoc program element
             default:
+                // -rx- showLibrary( model._library );
+                // TODO: redo this.
                 refreshLibrary( JavadocModelUtils.getLibraryId(model) );
                 refreshPackage( JavadocModelUtils.getPackageId(model) );
         }
@@ -1305,8 +1496,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
         if ( newLibraryId != currentLibraryId ) {
 
-            DbService.getQuietly( newLibraryId )
-                     .success( showLibrary );
+            RestService.get( newLibraryId )
+                       .success( showLibrary );
         }
     };
 
@@ -1317,8 +1508,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
     var refreshPackage = function(newPackageId) {
 
         if ( newPackageId != currentPackageId ) {
-            DbService.getQuietly( newPackageId )
-                     .success( showPackage );
+            RestService.get( newPackageId )
+                       .success( showPackage );
         }
     };
 
@@ -1442,13 +1633,13 @@ angular.module( "JavaApp", ['ui.bootstrap',
             case "@return":
                 return false;
 
-            // -rx- case "@author":
-            // -rx- case "@serial":
-            // -rx- case "@serialData":
-            // -rx- case "@serialField":
-            // -rx- case "@since":
-            // -rx- case "@version":
-            // -rx-     return true;
+            // case "@author":
+            // case "@serial":
+            // case "@serialData":
+            // case "@serialField":
+            // case "@since":
+            // case "@version":
+            //     return true;
 
             default:
                 return true;

@@ -34,7 +34,7 @@
                             </div>
                         </a>
                     </li>
-                    <li class="auto-complete-close" ng-if="!isEmpty(autoCompleteData)">
+                    <li class="auto-complete-close" ng-if="!Utils.isEmpty(autoCompleteData)">
                         <a href="" ng-click="clearListing()">
                             <div class="padding-xlite" >
                                 <span class="h4"><small>Clear Results</small></span>
@@ -60,7 +60,7 @@
 
         <h4 class="text-right"><a href="#{{packageModel._id}}" title="{{model.name}}">{{packageModel.name}}</a></h4>
 
-        <div ng-if="!isEmpty(packageModel.interfaces)">
+        <div ng-if="!Utils.isEmpty(packageModel.interfaces)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Interfaces</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.interfaces | orderBy: 'name'">
@@ -69,7 +69,7 @@
             </ul>
         </div>
 
-        <div ng-if="!isEmpty(packageModel.ordinaryClasses)">
+        <div ng-if="!Utils.isEmpty(packageModel.ordinaryClasses)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Classes</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.ordinaryClasses | orderBy: 'name'">
@@ -78,7 +78,7 @@
             </ul>
         </div>
 
-        <div ng-if="!isEmpty(packageModel.enums)">
+        <div ng-if="!Utils.isEmpty(packageModel.enums)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Enums</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.enums | orderBy: 'name'">
@@ -87,7 +87,7 @@
             </ul>
         </div>
 
-        <div ng-if="!isEmpty(packageModel.exceptions)">
+        <div ng-if="!Utils.isEmpty(packageModel.exceptions)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Exceptions</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.exceptions | orderBy: 'name'">
@@ -96,7 +96,7 @@
             </ul>
         </div>
 
-        <div ng-if="!isEmpty(packageModel.errors)">
+        <div ng-if="!Utils.isEmpty(packageModel.errors)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Errors</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.errors | orderBy: 'name'">
@@ -105,7 +105,7 @@
             </ul>
         </div>
 
-        <div ng-if="!isEmpty(packageModel.annotationTypes)">
+        <div ng-if="!Utils.isEmpty(packageModel.annotationTypes)">
             <h4 class="border-bottom-lite"><span class="border-tab-lite">Annotation Types</span></h4>
             <ul class="padding-none">
                 <li class="padding-none" ng-repeat="model in packageModel.annotationTypes | orderBy: 'name'">

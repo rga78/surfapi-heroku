@@ -339,6 +339,48 @@ public class MongoDBImplTest {
 
    }
    
+   
+
+   /**
+    *
+    */
+   @Test
+   public void testLimitFields() {
+       assumeTrue( mongoDBProcessRule.isStarted() );
+
+       DB db = new MongoDBImpl("test1");
+
+       Map doc1 = new MapBuilder().append( "_id", "1")
+                                  .append( "name", "myname")
+                                  .append( "type", "mytype")
+                                  .append( "methods", "my methods");
+       
+       db.save( "test.collection", doc1 );
+       
+       Map doc2 = db.read("test.collection", "1", new MapBuilder().append("name", 1));
+       assertFalse( doc2.containsKey("methods") );
+       assertFalse( doc2.containsKey("type") );
+       assertEquals( "myname", doc2.get("name") );
+       
+       doc2 = db.read("test.collection", "1", new MapBuilder().append("methods", 0));
+       assertFalse( doc2.containsKey("methods") );
+       assertEquals( "myname", doc2.get("name") );
+       assertEquals( "mytype", doc2.get("type") );
+       
+       doc2 = db.read("test.collection", "1", new MapBuilder().append("methods", 0)
+                                                                  .append("name", 0));
+       assertFalse( doc2.containsKey("methods") );
+       assertFalse( doc2.containsKey("name") );
+       assertEquals( "mytype", doc2.get("type") );
+       
+       // Empty fields filter should return all fields.
+       doc2 = db.read("test.collection", "1", new MapBuilder());
+       assertEquals( "myname", doc2.get("name") );
+       assertEquals( "mytype", doc2.get("type") );
+       assertEquals( "my methods", doc2.get("methods") );
+
+   }
+   
 
     private void log(String msg, List<Map> docs) {
         for (Map doc : docs) {

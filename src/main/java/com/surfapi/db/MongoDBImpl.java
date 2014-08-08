@@ -179,6 +179,16 @@ public class MongoDBImpl implements DB {
     }
     
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map read(String collection, String key, Map<String, Integer> fields) {
+        DBObject dbobj = mongoDB.getCollection(collection).findOne( key, new BasicDBObject(fields) );
+        return (dbobj != null) ? dbobj.toMap() : null;
+    }
+
+    
+    /**
      * 
      */
     protected String parseCollectionName(String _id) {

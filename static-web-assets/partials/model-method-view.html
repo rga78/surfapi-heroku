@@ -2,7 +2,7 @@
     <div class="code col-md-2">
 
         <!-- Annotations on the method, if any -->
-        <ul class="padding-none" ng-if="!isEmpty(methodDoc.annotations) && showFullDocToggle" >
+        <ul class="padding-none" ng-if="!Utils.isEmpty(methodDoc.annotations) && showFullDocToggle" >
              <li class="padding-none" ng-repeat="annotation in methodDoc.annotations">
                 <span class="code" ng-bind-html="formatAnnotation(annotation)"></span>
              </li>
@@ -21,7 +21,7 @@
             <sa-method-signature parameters="methodDoc.parameters" flat-signature="methodDoc.flatSignature"></sa-method-signature>
 
             <!-- throws clause -->
-            <span ng-show="!isEmpty(methodDoc.thrownExceptionTypes)">throws
+            <span ng-show="!Utils.isEmpty(methodDoc.thrownExceptionTypes)">throws
                 <span class="comma-separated-list">
                     <span class="list-item" ng-repeat="thrownExceptionType in methodDoc.thrownExceptionTypes">
                         <sa-type doc="thrownExceptionType"></sa-type
@@ -53,7 +53,7 @@
             </div>
 
             <!-- Method parameters -->
-            <div ng-if="!isEmpty(methodDoc.parameters)">
+            <div ng-if="!Utils.isEmpty(methodDoc.parameters)">
                 <h4>Parameters</h4>
                 <ul>
                     <li>
@@ -72,7 +72,7 @@
             </div>
 
             <!-- Method's return type-->
-            <div ng-if="!isEmpty(methodDoc.returnType)">
+            <div ng-if="!Utils.isEmpty(methodDoc.returnType)">
                 <h4>Returns</h4>
                 <ul>
                     <li>
@@ -91,7 +91,7 @@
             </div>
 
             <!-- Method's thrown exceptions  -->
-            <div ng-if="!isEmpty(methodDoc.throwsTags)"> <!--  || !isEmpty(methodDoc.thrownExceptionTypes)" -->
+            <div ng-if="!Utils.isEmpty(methodDoc.throwsTags)"> <!--  || !Utils.isEmpty(methodDoc.thrownExceptionTypes)" -->
                 <h4>Throws</h4>
                 <ul>
                     <li>
@@ -108,8 +108,8 @@
                             <tr ng-repeat="throwsTag in methodDoc.throwsTags">
                                 <td>
                                     <span class="code">
-                                        <sa-type ng-if="!isEmpty(throwsTag.exceptionType)" doc="throwsTag.exceptionType"></sa-type>
-                                        <span ng-if="isEmpty(throwsTag.exceptionType)" ng-bind="throwsTag.exceptionName"></span>
+                                        <sa-type ng-if="!Utils.isEmpty(throwsTag.exceptionType)" doc="throwsTag.exceptionType"></sa-type>
+                                        <span ng-if="Utils.isEmpty(throwsTag.exceptionType)" ng-bind="throwsTag.exceptionName"></span>
                                     </span>
                                 </td>
                                 <td>

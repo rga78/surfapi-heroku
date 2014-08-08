@@ -49,24 +49,6 @@ public class AutoCompleteTest extends JerseyTest {
         return new ResourceConfig(AutoComplete.class);
     }
     
-    // -rx- /**
-    // -rx-  * 
-    // -rx-  */
-    // -rx- @Test
-    // -rx- public void testLookup() throws Exception {
-    // -rx-     
-    // -rx-     DBService.setDb( new DBImpl() );
-    // -rx-     new DBLoader().inject( DBService.getDb() ).loadUnchecked(new File("src/test/resources") );
-    // -rx-     
-    // -rx-     TrieManagerService.setTrieManager( new TrieBuilder().inject( DBService.getDb()  ).buildAll() );
-    // -rx-     
-    // -rx-     String responseMsg = target().path("autoComplete").queryParam("str", "Dem").request().get(String.class);
-    // -rx-     
-    // -rx-     // Verify the json response is parseable.
-    // -rx-     JSONArray jsonArr = (JSONArray) new JSONParser().parse( responseMsg );
-    // -rx-     assertFalse( jsonArr.isEmpty() );
-    // -rx- }
-    
 
     /**
      * 

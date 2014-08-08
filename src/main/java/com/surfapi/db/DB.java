@@ -55,6 +55,20 @@ public interface DB  {
     public Map read(String collection, String key) ;
 
     /**
+     * @return the document with the given ID.  Note the id includes the collection name
+     *         in it.
+     */
+    public Map read(String _id);
+    
+    /**
+     * @param fields list of fields to include/exclude.
+     * 
+     * @return the document in the given collection at the given key.
+     */
+    public Map read(String collection, String key, Map<String, Integer> fields );
+    
+    
+    /**
      * @return db stats, as a map.
      */
     public Map getStats();
@@ -90,11 +104,6 @@ public interface DB  {
      */
     public List<String> getLibraryIds(String lang);
 
-    /**
-     * @return the document with thei given ID.  Note the id includes the collection name
-     *         in it.
-     */
-    public Map read(String _id);
 
     /**
      * Build an index for the given collection on the given keys.
@@ -131,7 +140,7 @@ public interface DB  {
      * @return the mongoDB client
      */
     public com.mongodb.DB getMongoDB();
-    
+
     
 }
 

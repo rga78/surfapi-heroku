@@ -136,8 +136,8 @@ public class ReferenceNameQuery extends CustomIndex<ReferenceNameQuery> {
      * Create the index on the _qn field, if one doesn't already exist.
      */
     protected void ensureIndex() {
-        getDb().createIndex( getCollectionName() , new MapBuilder().append( "_qn", 1 )
-                                                                                 .append("_id", -1) );
+        getDb().createIndex( getCollectionName() , new MapBuilder().append( "_qn", 1 ) );
+                                                                   // .append("_id", -1) );
     }
     
     /**

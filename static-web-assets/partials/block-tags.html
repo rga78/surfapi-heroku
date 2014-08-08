@@ -1,14 +1,14 @@
 <!-- "other" block tags like @author, @since, etc.-->
 <div>
     <!-- block tags -->
-    <div ng-if="!isEmpty(getUnformattedTags(model.tags))">
+    <div ng-if="!Utils.isEmpty(getUnformattedTags(model.tags))">
         <h4>Block Tags</h4>
         <ul>
             <li ng-repeat="tag in getUnformattedTags(model.tags)"><b>{{tag.name}}</b> {{tag.text}}</li>
         </ul>
     </div>
 
-    <div ng-if="!isEmpty(model.seeTags)">
+    <div ng-if="!Utils.isEmpty(model.seeTags)">
         <h4>See Also</h4>
         <ul>
             <li ng-repeat="seeTag in model.seeTags" ng-bind-html="formatSeeTag(seeTag, model)"></li>

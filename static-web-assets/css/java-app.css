@@ -23,6 +23,26 @@ td {
     background-color: #dee3e9; 
 }
 
+.blackout {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1040;
+  background-color: #666;
+}
+
+.blackout.fade {
+  filter: alpha(opacity=0);
+  opacity: 0;
+}
+
+.blackout.in {
+  filter: alpha(opacity=50);
+  opacity: .5;
+}
+
 .border-bottom {
     border-bottom: dotted 1px gray;
 }

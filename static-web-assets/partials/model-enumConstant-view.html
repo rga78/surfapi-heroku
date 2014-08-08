@@ -2,7 +2,7 @@
     <div class="code col-lg-2">
 
         <!-- Annotations on the field, if any -->
-        <ul class="padding-none" ng-if="!isEmpty(fieldDoc.annotations) && showFullDocToggle" >
+        <ul class="padding-none" ng-if="!Utils.isEmpty(fieldDoc.annotations) && showFullDocToggle" >
              <li class="padding-none" ng-repeat="annotation in fieldDoc.annotations">
                  <span class="code" ng-bind-html="formatAnnotation(annotation)"></span>
              </li>
