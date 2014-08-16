@@ -1064,7 +1064,6 @@ angular.module( "JavaApp", ['ui.bootstrap',
     $scope.clearListing = clearListing;
     $scope.onKeypress = onKeypress;
     $scope.onChange = onChange;
-    // -rx- $scope.getReferenceName = JavadocModelUtils.getReferenceName;
     $scope.Utils = Utils;
 
     // Don't attach getItemHref to the scope if a containing controller has already

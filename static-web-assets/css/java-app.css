@@ -41,7 +41,7 @@ td {
   height: 100%;
   width: 100%;
   z-index: 1040;
-  background-color: #666;
+  background-color: #ccc;
 }
 
 .blackout.fade {
@@ -231,6 +231,7 @@ code {
 .javadoc-model-panel {
     position: relative;
     padding: 25px;
+    min-height: 400px;
 }
 
 .ontop {
