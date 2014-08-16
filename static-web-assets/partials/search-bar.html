@@ -1,25 +1,37 @@
 <!-- auto-complete search bar -->
 <div ng-controller="SearchController" >
     <form role="search">
-        <div class="input-group">
+        <!-- Note: scope.placeholder allows parent controllers (whose views include this 
+                   SearchController) to override the default placeholder text -->
+        <div class="ontop input-group">
             <input type="text" 
                    class="form-control" 
-                   placeholder="Class or package name..." 
+                   placeholder="{{placeholder || 'Search for class or package name...'}}" 
                    ng-model="str" 
                    ng-trim="false"
                    ng-change="onChange()" 
                    ui-keyup="{esc: 'onKeypress($event)'}" 
                    >
             <div class="input-group-btn">
-                <button tabindex="-1" class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
+                <!-- button tabindex="-1" class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button -->
+                <span class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
             </div>
         </div>
     </form>
     <div class="auto-complete-results">
-        <ul class="ontop container">
+
+        <div class="full-blackout" 
+            ng-if="!Utils.isEmpty(autoCompleteData)"
+            ng-click="clearListing()">
+        </div>
+
+        <ul class="ontop search-results-list" ng-if="!Utils.isEmpty(autoCompleteData)">
             <li ng-repeat="item in autoCompleteData">
                 <!-- a href="#{{item.id}}" ng-click="clearListing()" -->
-                <a href="#/q/java/qn/{{ getReferenceName( item ) }}" ng-click="clearListing()">
+                <!-- a href="#/q/java/qn/{{ getReferenceName( item ) }} -->
+                <a href="{{ getItemHref( item ) }}" 
+                   ng-click="clearListing()" 
+                   ui-keyup="{esc: 'onKeypress($event)'}" >
                     <div class="padding-xlite" >
                         <span class="h4">{{ item.name }}
                             <br/>
@@ -29,7 +41,7 @@
                     </div>
                 </a>
             </li>
-            <li class="auto-complete-close" ng-if="!Utils.isEmpty(autoCompleteData)">
+            <li class="auto-complete-close" >
                 <a href="" ng-click="clearListing()">
                     <div class="padding-xlite" >
                         <span class="h4"><small>Clear Results</small></span>

@@ -7,6 +7,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
  *       Something about the history api.  More functionality.  Or something.
  *       One thign I notice is the URL is weird... the hash string is always
  *       HTML-escaped/url-encoded for whatever reason.
+ *       More embarrassingly I don't remember why I enabled it in the first place.
+ *       Probably needed it for the history manipulation done in ReferenceQueryService.
  */
 .config(['$locationProvider', function($locationProvider) {
     $locationProvider.html5Mode(true);
@@ -127,7 +129,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
 /**
  * TODO: change this to a  "/q/*" rest target
  *
- * TODO: I should use factory() instead of service().  The only difference between the
+ * DONE: I should use factory() instead of service().  The only difference between the
  * two is that the thing returned from service will be "new'ed" up, i.e new <retVal>().
  * 'new' sets up prototype inheritance and sets the contstructor property
  * (see http://pivotallabs.com/javascript-constructors-prototypes-and-the-new-keyword/),
@@ -145,6 +147,11 @@ angular.module( "JavaApp", ['ui.bootstrap',
     var onError = function(data, status, headers, config) {
         alert("AutoCompleteService (url = " + config.url + ") didn't work: " + status + ": " + data);
         // TODO: create modal with option to send error message to me for diagnosing.
+        //       or maybe it should always just send the error, with as much context as possible
+        //       (browser, os, request that failed, etc)
+        // TODO: this reminds me I should be logging activity such as which classes
+        //       get the most hits.  Should I log that here or on the server-side?
+        // TODO: should this delegate to RestService, passing the url ?
     };
 
     var get = function(str, indexName) {
@@ -492,7 +499,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
             case "@docRoot":
                 return "{@docRoot " + tag.text + "}"; // TODO
             case "@inheritDoc":
-                return "{@inheritDoc}"; // TODO
+                return "{@inheritDoc}"; 
             case "@link":
                 return formatLinkTag(tag, packageName, className);
             case "@linkplain":
@@ -692,7 +699,12 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
     // Note: assumes model is NOT null
     var getLibraryId = function( model ) {
-        return ( isLibrary(model) ) ? model._id : getId( model._library );
+        return getLibrary(model)._id;
+    }
+
+    // Note: assumes model is NOT null
+    var getLibrary = function( model ) {
+        return ( isLibrary(model) ) ? model : model._library;
     }
 
     var getClassFor = function(model) {
@@ -728,6 +740,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
         getMetaType: getMetaType,
         getPackageId: getPackageId,
         getLibraryId: getLibraryId,
+        getLibrary: getLibrary,
         getClassFor: getClassFor,
         getPackageFor: getPackageFor,
         getQualifiedName: getQualifiedName,
@@ -991,6 +1004,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
         // -rx- Log.log(_this, "callAutoCompleteService:  str=#" + str + "#, autoCompleteIndexName: " + $scope.autoCompleteIndexName
         // -rx-                + ", onChangeCount: " + onChangeCount + ", onChangeCounter: " + _this.onChangeCounter);
 
+        // Note: $scope.autoCompleteIndexName is inherited by the containing scope.
         AutoCompleteService.get( str, $scope.autoCompleteIndexName )
              .success( function(data) {
                  
@@ -1036,12 +1050,28 @@ angular.module( "JavaApp", ['ui.bootstrap',
         }
     };
 
+    /**
+     * Note: this method may be "overridden" by containing controllers if they define
+     *       scope.getItemHref themselves.
+     *
+     * @return the target for the anchor href
+     */
+    var getItemHref = function(item) {
+        return "#/q/java/qn/" + JavadocModelUtils.getReferenceName( item );
+    };
+
     // Export to scope.
     $scope.clearListing = clearListing;
     $scope.onKeypress = onKeypress;
     $scope.onChange = onChange;
-    $scope.getReferenceName = JavadocModelUtils.getReferenceName;
+    // -rx- $scope.getReferenceName = JavadocModelUtils.getReferenceName;
     $scope.Utils = Utils;
+
+    // Don't attach getItemHref to the scope if a containing controller has already
+    // attached its own function.
+    if (angular.isUndefined($scope.getItemHref)) {
+        $scope.getItemHref = getItemHref;
+    }
    
 }])
 
@@ -1437,9 +1467,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
                                               Utils) {
 
     var _this = this;
+    _this.logging = { prefix: "NavLibraryController" };
 
-    // Export function to scope.
-    $scope.Utils = Utils;
 
     var currentLibraryId = null;
     var currentPackageId = null;
@@ -1451,30 +1480,41 @@ angular.module( "JavaApp", ['ui.bootstrap',
      */
     $rootScope.$on( "$saJavadocModelChange", function(event, model) {
 
-        Log.log( _this, "$saJavadocModelChange: _id: " + JavadocModelUtils.getId(model));
+        Log.log( _this, "$saJavadocModelChange: _id: " + JavadocModelUtils.getId(model) + ", showPackagesToggle: " + $scope.showPackagesToggle);
         
-        switch (JavadocModelUtils.getMetaType(model)) {
-            case "package":
-                showPackage(model);
-                refreshLibrary( JavadocModelUtils.getLibraryId(model) );
-                break;
-            case "library":
-                showLibrary(model);
-                clearPackage();
-                break;
-            case "lang":
-            case "library.versions":
-            case null: 
-                clearLibrary();
-                break;
-            // Everything else is a javadoc program element
-            default:
-                // -rx- showLibrary( model._library );
-                // TODO: redo this.
-                refreshLibrary( JavadocModelUtils.getLibraryId(model) );
-                refreshPackage( JavadocModelUtils.getPackageId(model) );
+        setLibraryModelStub(JavadocModelUtils.getLibrary(model));
+
+        if ($scope.showPackagesToggle) {
+            switch (JavadocModelUtils.getMetaType(model)) {
+                case "package":
+                    showPackage(model);
+                    refreshLibrary( JavadocModelUtils.getLibraryId(model) );
+                    break;
+                case "library":
+                    showLibrary(model);
+                    clearPackage();
+                    break;
+                case "lang":
+                case "library.versions":
+                case null: 
+                    clearLibrary();
+                    break;
+                // Everything else is a javadoc program element
+                default:
+                    refreshLibrary( JavadocModelUtils.getLibraryId(model) );
+                    refreshPackage( JavadocModelUtils.getPackageId(model) );
+            }
         }
     });
+
+    /**
+     * Set the library model stub onto the scope and set the autoCompleteIndexName
+     * for the SearchController.
+     */
+    var setLibraryModelStub = function(libraryModelStub) {
+        $scope.libraryModelStub = libraryModelStub;
+        $scope.autoCompleteIndexName = libraryModelStub._id;
+    }
 
     var showPackage = function(model) {
         currentPackageId = (model != null) ? model._id : null;
@@ -1524,6 +1564,36 @@ angular.module( "JavaApp", ['ui.bootstrap',
         $scope.autoCompleteIndexName = null;
         currentLibraryId = null;
     };
+
+    var showPackages = function() {
+        $scope.showPackagesToggle = !$scope.showPackagesToggle;
+
+        if ($scope.showPackagesToggle) {
+            refreshLibrary( $scope.libraryModelStub._id );
+        } else {
+            clearLibrary();
+        }
+    }
+
+    /**
+     * @return the target for the anchor href
+     */
+    var getItemHref = function(item) {
+        return "#" + item.id;
+    };
+
+
+    // Export function to scope.
+    $scope.Utils = Utils;
+    $scope.showPackages = showPackages;
+
+    $scope.showPackagesToggle = false;
+
+    // Override default placeholder text
+    $scope.placeholder = "Search this library...";
+
+    // Override the item href.
+    $scope.getItemHref = getItemHref;
 
 }])
 

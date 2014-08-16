@@ -39,8 +39,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
 
-    <!-- Nav path bar -->
-    <div class="nav-path-bar" ng-include="'partials/nav-path-bar.html'"></div>
+    <!-- TODO: add mechanism for filtering method names -->
 
     <!-- Primary content -->
     <div class="container-fluid">
@@ -48,387 +47,393 @@
         <div class="row">
 
             <!-- Left panel library/package list -->
-            <div class="col-lg-2 padding-lite">
+            <div class="col-lg-2 padding-lite nav-library-panel">
                 <div ng-include="'partials/nav-library.html'"></div>
             </div>
 
             <!-- Main panel -->
-            <div class="col-lg-10 padding border-left-thick" style="position: relative" >
+            <div class="col-lg-10 border-left-thick" >
 
-                <div ng-show="requestPending" class="blackout fade in" > </div>
+                <!-- Nav path bar -->
+                <div class="nav-path-bar" ng-include="'partials/nav-path-bar.html'"></div>
 
-                <div ng-controller="JavadocController">
+                <div class="javadoc-model-panel">
 
-                    <!-- Class/Interface/Enum/AnnotationType view -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel) || JavadocModelUtils.isClassElement(javadocModel)">
-                        <!-- Annotations on the class, if any -->
-                        <ul class="padding-none" ng-if="!Utils.isEmpty(javadocModel.annotations)" >
-                             <li class="padding-none" ng-repeat="annotation in javadocModel.annotations">
-                                 <span class="code" ng-bind-html="Formatter.formatAnnotation(annotation)"></span>
-                             </li>
-                        </ul>
-                
-                        <!-- Class name -->
-                        <span>
-                            {{javadocModel.modifiers | trim:"interface"}} 
-                            <span ng-if="javadocModel.metaType!='annotationType'">{{javadocModel.metaType}}</span>
-                            <span ng-if="javadocModel.metaType=='annotationType'">@interface</span>
-                        </span>
+                    <div ng-show="requestPending" class="blackout fade in" > </div>
 
-                        <h1 ng-if="!JavadocModelUtils.isClassElement(javadocModel)" class="model-title">{{ javadocModel.qualifiedName }}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small></h1>  
+                    <div ng-controller="JavadocController">
 
-                        <h1 ng-if="JavadocModelUtils.isClassElement(javadocModel)" class="model-title" >
-                            <a href="#{{javadocModel.containingClass._id}}">{{ javadocModel.containingClass.qualifiedName }}</a>.{{javadocModel.name}}{{javadocModel.flatSignature}}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small>
-                            <hr />
-                        </h1>  
-                    </div>
+                        <!-- Class/Interface/Enum/AnnotationType view -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel) || JavadocModelUtils.isClassElement(javadocModel)">
+                            <!-- Annotations on the class, if any -->
+                            <ul class="padding-none" ng-if="!Utils.isEmpty(javadocModel.annotations)" >
+                                 <li class="padding-none" ng-repeat="annotation in javadocModel.annotations">
+                                     <span class="code" ng-bind-html="Formatter.formatAnnotation(annotation)"></span>
+                                 </li>
+                            </ul>
+                    
+                            <!-- Class name -->
+                            <span>
+                                {{javadocModel.modifiers | trim:"interface"}} 
+                                <span ng-if="javadocModel.metaType!='annotationType'">{{javadocModel.metaType}}</span>
+                                <span ng-if="javadocModel.metaType=='annotationType'">@interface</span>
+                            </span>
 
-                    <!-- Class elements -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel)">
-                
-                        <div class="tab-body">
-                            <!-- superclasses -->
-                            <div ng-if="!Utils.isEmpty(javadocModel.allSuperclassTypes)">
-                                <h4>Extends</h4>
-                                <ul>
-                                    <li class="comma-separated-list">
-                                        <span class="list-item code" ng-repeat="superclassDoc in javadocModel.allSuperclassTypes">
-                                            <sa-type doc="superclassDoc"></sa-type
-                                        ></span>
-                                    </li>
-                                </ul>
-                            </div>
-                
-                            <!-- interfaces -->
-                            <!-- Note: don't show for interfaces (already showed under superclasses) -->
-                            <div ng-if="!Utils.isEmpty(javadocModel.allInterfaceTypes) && !JavadocModelUtils.isInterface(javadocModel)">
-                                <h4>Implements</h4>
-                                <ul>
-                                    <li class="comma-separated-list">
-                                        <span class="list-item code" ng-repeat="interfaceDoc in javadocModel.allInterfaceTypes">
-                                            <sa-type doc="interfaceDoc"></sa-type
-                                        ></span>
-                                    </li>
-                                </ul>
-                            </div>
-                
-                            <!-- Type parameters -->
-                            <div ng-if="javadocModel.typeParamTags">
-                                <h4>Type Parameters</h4>
-                                <ul> 
-                                    <li ng-repeat="typeParamTag in javadocModel.typeParamTags">
-                                        <span class="code">&lt;{{typeParamTag.parameterName}}&gt;</span>
-                                        <span class="padding-lite" ng-bind-html="typeParamTag.parameterComment | formatTags:javadocModel"></span>
-                                    </li>
-                                </ul>
-                            </div>
-                
-                            <!-- All known subclasses -->
-                            <div ng-controller="AllKnownSubclassesController">
-                                    <h4>All Known Subclasses</h4>
+                            <h1 ng-if="!JavadocModelUtils.isClassElement(javadocModel)" class="model-title">{{ javadocModel.qualifiedName }}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small></h1>  
+
+                            <h1 ng-if="JavadocModelUtils.isClassElement(javadocModel)" class="model-title" >
+                                <a href="#{{javadocModel.containingClass._id}}">{{ javadocModel.containingClass.qualifiedName }}</a>.{{javadocModel.name}}{{javadocModel.flatSignature}}<small><sa-type-parameters doc="javadocModel.typeParameters"></sa-type-parameters></small>
+                                <hr />
+                            </h1>  
+                        </div>
+
+                        <!-- Class elements -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClass(javadocModel)">
+                    
+                            <div class="tab-body">
+                                <!-- superclasses -->
+                                <div ng-if="!Utils.isEmpty(javadocModel.allSuperclassTypes)">
+                                    <h4>Extends</h4>
                                     <ul>
-                                        <li ng-if="none">
-                                            None
-                                        </li>
                                         <li class="comma-separated-list">
-                                            <span class="list-item code" ng-repeat="scDoc in allKnownSubclasses">
-                                                <sa-type doc="scDoc"></sa-type
+                                            <span class="list-item code" ng-repeat="superclassDoc in javadocModel.allSuperclassTypes">
+                                                <sa-type doc="superclassDoc"></sa-type
                                             ></span>
                                         </li>
                                     </ul>
-                            </div>
-
-                            <!-- All known implementors -->
-                            <div ng-if="JavadocModelUtils.isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
-                                    <h4>All Known Implementors</h4>
+                                </div>
+                    
+                                <!-- interfaces -->
+                                <!-- Note: don't show for interfaces (already showed under superclasses) -->
+                                <div ng-if="!Utils.isEmpty(javadocModel.allInterfaceTypes) && !JavadocModelUtils.isInterface(javadocModel)">
+                                    <h4>Implements</h4>
                                     <ul>
-                                        <li ng-if="none">
-                                            None
-                                        </li>
                                         <li class="comma-separated-list">
-                                            <span class="list-item code" ng-repeat="implDoc in allKnownImplementors">
-                                                <sa-type doc="implDoc"></sa-type
+                                            <span class="list-item code" ng-repeat="interfaceDoc in javadocModel.allInterfaceTypes">
+                                                <sa-type doc="interfaceDoc"></sa-type
                                             ></span>
                                         </li>
                                     </ul>
-                            </div>
-                        </div>
+                                </div>
+                    
+                                <!-- Type parameters -->
+                                <div ng-if="javadocModel.typeParamTags">
+                                    <h4>Type Parameters</h4>
+                                    <ul> 
+                                        <li ng-repeat="typeParamTag in javadocModel.typeParamTags">
+                                            <span class="code">&lt;{{typeParamTag.parameterName}}&gt;</span>
+                                            <span class="padding-lite" ng-bind-html="typeParamTag.parameterComment | formatTags:javadocModel"></span>
+                                        </li>
+                                    </ul>
+                                </div>
+                    
+                                <!-- All known subclasses -->
+                                <div ng-controller="AllKnownSubclassesController">
+                                        <h4>All Known Subclasses</h4>
+                                        <ul>
+                                            <li ng-if="none">
+                                                None
+                                            </li>
+                                            <li class="comma-separated-list">
+                                                <span class="list-item code" ng-repeat="scDoc in allKnownSubclasses">
+                                                    <sa-type doc="scDoc"></sa-type
+                                                ></span>
+                                            </li>
+                                        </ul>
+                                </div>
 
-                
-                        <!-- Main description -->
-                        <div class="padding-vertical-lite">
-                            <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel"></div>
-                
-                            <!-- block tags -->
-                            <div ng-if="!Utils.isEmpty(JavadocModelUtils.getUnformattedTags(javadocModel.tags))">
-                                <h4>Block Tags</h4>
-                                <ul>
-                                    <li ng-repeat="tag in JavadocModelUtils.getUnformattedTags(javadocModel.tags)"><b>{{tag.name}}</b> {{tag.text}}</li>
-                                </ul>
+                                <!-- All known implementors -->
+                                <div ng-if="JavadocModelUtils.isInterface(javadocModel)" ng-controller="AllKnownImplementorsController">
+                                        <h4>All Known Implementors</h4>
+                                        <ul>
+                                            <li ng-if="none">
+                                                None
+                                            </li>
+                                            <li class="comma-separated-list">
+                                                <span class="list-item code" ng-repeat="implDoc in allKnownImplementors">
+                                                    <sa-type doc="implDoc"></sa-type
+                                                ></span>
+                                            </li>
+                                        </ul>
+                                </div>
                             </div>
 
-                            <!-- See also tags -->
-                            <div ng-if="!Utils.isEmpty(javadocModel.seeTags)">
-                                <h4>See Also</h4>
-                                <ul>
-                                    <li ng-repeat="seeTag in javadocModel.seeTags" ng-bind-html="Formatter.formatSeeTag(seeTag, javadocModel)"></li>
-                                </ul>
-                            </div>
+                    
+                            <!-- Main description -->
+                            <div class="padding-vertical-lite">
+                                <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel"></div>
+                    
+                                <!-- block tags -->
+                                <div ng-if="!Utils.isEmpty(JavadocModelUtils.getUnformattedTags(javadocModel.tags))">
+                                    <h4>Block Tags</h4>
+                                    <ul>
+                                        <li ng-repeat="tag in JavadocModelUtils.getUnformattedTags(javadocModel.tags)"><b>{{tag.name}}</b> {{tag.text}}</li>
+                                    </ul>
+                                </div>
 
-                        </div>
-                
-                
-                        <!-- Fields -->
-                        <div ng-show="!Utils.isEmpty(javadocModel.fields)">
-                            <h3 class="tab-header"><span class="tab-label">Fields</span></h3>
-                            <div class="tab-body">
-                                <ul class="table-condensed table-striped model-list" >
-                                    <li ng-repeat="fieldDoc in javadocModel.fields | orderBy: 'name' " ng-include="'partials/model-field-view.html'"></li>
-                                </ul>
-                            </div>
-                        </div>
+                                <!-- See also tags -->
+                                <div ng-if="!Utils.isEmpty(javadocModel.seeTags)">
+                                    <h4>See Also</h4>
+                                    <ul>
+                                        <li ng-repeat="seeTag in javadocModel.seeTags" ng-bind-html="Formatter.formatSeeTag(seeTag, javadocModel)"></li>
+                                    </ul>
+                                </div>
 
-                        <!-- Annotation elements -->
-                        <div ng-show="!Utils.isEmpty(javadocModel.elements)">
-                            <h3 class="tab-header"><span class="tab-label">Elements</span></h3>
-                            <div class="tab-body">
-                            <ul class="table-condensed table-striped model-list" >
-                                <li ng-repeat="methodDoc in javadocModel.elements | orderBy: 'name' " ng-include="'partials/model-annotationElement-view.html'"></li>
-                            </ul>
                             </div>
-                        </div>
-                
-                        <!-- Nested Classes -->
-                        <div ng-show="!Utils.isEmpty(javadocModel.innerClasses)">
-                            <h3 class="tab-header"><span class="tab-label">Nested Classes</span></h3>
-                            <div class="tab-body">
-                            <ul class="table-condensed table-striped model-list" >
-                                <li ng-repeat="innerClassDoc in javadocModel.innerClasses | orderBy: 'name' " ng-include="'partials/model-inner-class-view.html'"></li>
-                            </ul>
-                            </div>
-                        </div>
-                
-                        <!-- Enums -->
-                        <div ng-show="!Utils.isEmpty(javadocModel.enumConstants)">
-                            <h3 class="tab-header"><span class="tab-label">Enum Constants</span></h3>
-                            <div class="tab-body">
-                            <ul class="table-condensed table-striped model-list" >
-                                <li ng-repeat="fieldDoc in javadocModel.enumConstants | orderBy: 'name' " ng-include="'partials/model-enumConstant-view.html'"></li>
-                            </ul>
-                            </div>
-                        </div>
-                
-                        <!-- Constructors tab -->
-                        <div ng-show="!Utils.isEmpty(javadocModel.constructors)">
-                            <h3 class="tab-header"><span class="tab-label">Constructors</span></h3>
-                            <div class="tab-body">
-                            <ul class="table-condensed table-striped model-list" >
-                                <li ng-repeat="methodDoc in javadocModel.constructors | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
-                            </ul>
-                            </div>
-                        </div>
-                
-                        <!-- Methods tab -->
-                        <div ng-show="!Utils.isEmpty(javadocModel.methods) || !Utils.isEmpty(javadocModel.allInheritedMethods)">
-                            <h3 class="tab-header"><span class="tab-label">Methods</span></h3>
-                            <div class="tab-body">
-                                <ul class="table-condensed table-striped model-list" >
-                                    <li ng-repeat="methodDoc in javadocModel.methods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
-                                </ul>
-                                <div ng-repeat="inheritedDoc in javadocModel.allInheritedMethods">         
-                                    <h4 class="inherited-from-title">Inherited from <sa-type doc="inheritedDoc.superclassType"></sa-type></h4>
+                    
+                    
+                            <!-- Fields -->
+                            <div ng-show="!Utils.isEmpty(javadocModel.fields)">
+                                <h3 class="tab-header"><span class="tab-label">Fields</span></h3>
+                                <div class="tab-body">
                                     <ul class="table-condensed table-striped model-list" >
-                                        <li ng-repeat="methodDoc in inheritedDoc.inheritedMethods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
+                                        <li ng-repeat="fieldDoc in javadocModel.fields | orderBy: 'name' " ng-include="'partials/model-field-view.html'"></li>
                                     </ul>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Package view -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isPackage(javadocModel)">
-                        <span class="code">{{javadocModel.metaType}}</span>
-                        <h1 style="margin-top:0" ng-bind="javadocModel.name"></h1>
-                        <hr />
+                            <!-- Annotation elements -->
+                            <div ng-show="!Utils.isEmpty(javadocModel.elements)">
+                                <h3 class="tab-header"><span class="tab-label">Elements</span></h3>
+                                <div class="tab-body">
+                                <ul class="table-condensed table-striped model-list" >
+                                    <li ng-repeat="methodDoc in javadocModel.elements | orderBy: 'name' " ng-include="'partials/model-annotationElement-view.html'"></li>
+                                </ul>
+                                </div>
+                            </div>
                     
-                        <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel "> </div>
+                            <!-- Nested Classes -->
+                            <div ng-show="!Utils.isEmpty(javadocModel.innerClasses)">
+                                <h3 class="tab-header"><span class="tab-label">Nested Classes</span></h3>
+                                <div class="tab-body">
+                                <ul class="table-condensed table-striped model-list" >
+                                    <li ng-repeat="innerClassDoc in javadocModel.innerClasses | orderBy: 'name' " ng-include="'partials/model-inner-class-view.html'"></li>
+                                </ul>
+                                </div>
+                            </div>
                     
-                        <div ng-show="!Utils.isEmpty(javadocModel.interfaces)">
-                            <h3 class="tab-header"><span class="tab-label">Interfaces</span></h3>
-                            <div class="tab-body">
-                            <table class="table table-condensed table-striped model-list">
-                                <tr ng-repeat="classDoc in javadocModel.interfaces | orderBy: 'name' ">
-                                    <td>
-                                        <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
-                                    </td>
-                                    <td>
-                                        <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
-                                    </td>
-                                </tr>
-                            </table>
+                            <!-- Enums -->
+                            <div ng-show="!Utils.isEmpty(javadocModel.enumConstants)">
+                                <h3 class="tab-header"><span class="tab-label">Enum Constants</span></h3>
+                                <div class="tab-body">
+                                <ul class="table-condensed table-striped model-list" >
+                                    <li ng-repeat="fieldDoc in javadocModel.enumConstants | orderBy: 'name' " ng-include="'partials/model-enumConstant-view.html'"></li>
+                                </ul>
+                                </div>
+                            </div>
+                    
+                            <!-- Constructors tab -->
+                            <div ng-show="!Utils.isEmpty(javadocModel.constructors)">
+                                <h3 class="tab-header"><span class="tab-label">Constructors</span></h3>
+                                <div class="tab-body">
+                                <ul class="table-condensed table-striped model-list" >
+                                    <li ng-repeat="methodDoc in javadocModel.constructors | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
+                                </ul>
+                                </div>
+                            </div>
+                    
+                            <!-- Methods tab -->
+                            <div ng-show="!Utils.isEmpty(javadocModel.methods) || !Utils.isEmpty(javadocModel.allInheritedMethods)">
+                                <h3 class="tab-header"><span class="tab-label">Methods</span></h3>
+                                <div class="tab-body">
+                                    <ul class="table-condensed table-striped model-list" >
+                                        <li ng-repeat="methodDoc in javadocModel.methods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
+                                    </ul>
+                                    <div ng-repeat="inheritedDoc in javadocModel.allInheritedMethods">         
+                                        <h4 class="inherited-from-title">Inherited from <sa-type doc="inheritedDoc.superclassType"></sa-type></h4>
+                                        <ul class="table-condensed table-striped model-list" >
+                                            <li ng-repeat="methodDoc in inheritedDoc.inheritedMethods | orderBy: 'name' " ng-include="'partials/model-method-view.html'"></li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    
-                        <div ng-show="!Utils.isEmpty(javadocModel.ordinaryClasses)">
-                            <h3 class="tab-header"><span class="tab-label">Classes</span></h3>
-                            <div class="tab-body">
-                            <table class="table table-condensed table-striped model-list">
-                                <tr ng-repeat="classDoc in javadocModel.ordinaryClasses | orderBy: 'name' ">
-                                    <td>
-                                        <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
-                                    </td>
-                                    <td>
-                                        <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
-                                    </td>
-                                </tr>
-                            </table>
-                            </div>
-                        </div>
-                    
-                        <div ng-show="!Utils.isEmpty(javadocModel.enums)">
-                            <h3 class="tab-header"><span class="tab-label">Enums</span></h3>
-                            <div class="tab-body">
-                            <table class="table table-condensed table-striped model-list">
-                                <tr ng-repeat="classDoc in javadocModel.enums | orderBy: 'name' ">
-                                    <td>
-                                        <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
-                                    </td>
-                                    <td>
-                                        <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
-                                    </td>
-                                </tr>
-                            </table>
-                            </div>
-                        </div>
-                    
-                        <div ng-show="!Utils.isEmpty(javadocModel.annotationTypes)">
-                            <h3 class="tab-header"><span class="tab-label">Annotation Types</span></h3>
-                            <div class="tab-body">
-                            <table class="table table-condensed table-striped model-list">
-                                <tr ng-repeat="classDoc in javadocModel.annotationTypes | orderBy: 'name' ">
-                                    <td>
-                                        <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
-                                    </td>
-                                    <td>
-                                        <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
-                                    </td>
-                                </tr>
-                            </table>
-                            </div>
-                        </div>
-                    
-                        <div ng-show="!Utils.isEmpty(javadocModel.exceptions)">
-                            <h3 class="tab-header"><span class="tab-label">Exceptions</span></h3>
-                            <div class="tab-body">
-                            <table class="table table-condensed table-striped model-list">
-                                <tr ng-repeat="classDoc in javadocModel.exceptions | orderBy: 'name' ">
-                                    <td>
-                                        <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
-                                    </td>
-                                    <td>
-                                        <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
-                                    </td>
-                                </tr>
-                            </table>
-                            </div>
-                        </div>
-                    
-                        <div ng-show="!Utils.isEmpty(javadocModel.errors)">
-                            <h3 class="tab-header"><span class="tab-label">Errors</span></h3>
-                            <div class="tab-body">
-                            <table class="table table-condensed table-striped model-list">
-                                <tr ng-repeat="classDoc in javadocModel.errors | orderBy: 'name' ">
-                                    <td>
-                                        <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
-                                    </td>
-                                    <td>
-                                        <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
-                                    </td>
-                                </tr>
-                            </table>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Library view -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLibrary(javadocModel)">
-                        <span class="code">{{javadocModel.lang}}</span>
-                        <br />
-                        <span class="h1">{{javadocModel.name}} {{javadocModel.version}}</span>
+                        <!-- Package view -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isPackage(javadocModel)">
+                            <span class="code">{{javadocModel.metaType}}</span>
+                            <h1 style="margin-top:0" ng-bind="javadocModel.name"></h1>
+                            <hr />
                         
-                        <div class="vertical-spacer">&nbsp;</div>
-                    
-                        <h3 class="tab-header"><span class="tab-label">Packages</span></h3>
-                        <div class="tab-body">
-                        <table class="table table-condensed table-striped model-list">
-                            <tr ng-repeat="pkg in javadocModel.packages | orderBy: 'name'">
-                                <td>
-                                    <a class="model-identifier" href="#{{pkg._id}}" ng-bind="pkg.name"></a>
-                                </td>
-                                <td>
-                                    <span ng-bind-html="pkg.firstSentenceTags | formatInlineTags:pkg.name:''"></span>
-                                </td>
-                            </tr>
-                        </table>
-                        </div>
-                    
-                    </div>
-
-                    <!-- Library Versions view -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLibraryVersions(javadocModel)">
-                        <h1>{{javadocModel.name}}</h1>  
-                    
-                        <div class="vertical-spacer">&nbsp;</div>
-
-                        <h3 class="tab-header"><span class="tab-label">Versions</span></h3>
-                        <div class="tab-body">
-                            <ul class="table-condensed table-striped model-list">
-                                <li ng-repeat="lib in javadocModel.versions | orderBy: 'version'">
-                                    <a class="model-identifier" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
-                                </li>
-                            </ul>
-                        </div>
-                    
-                    </div>
-
-                    <!-- Lang view -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLang(javadocModel)">
-                        <h1 ng-bind="javadocModel.name"></h1>
-                    
-                        <div class="vertical-spacer">&nbsp;</div>
-
-                        <h3 class="tab-header"><span class="tab-label">Libraries</span></h3>
-                        <div class="tab-body">
-                            <ul class="table-condensed table-striped model-list">
-                                <li ng-repeat="lib in javadocModel.libraries | orderBy: 'name'">
-                                    <a class="model-identifier" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
-                                </li>
-                            </ul>
-                        </div>
-                    
-                    </div>
-
-                    <!-- Method/Field/Enum view -->
-                    <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClassElement(javadocModel)">
-                        <div ng-switch on="javadocModel.metaType">
-                            <div ng-switch-when="method">
-                                <div ng-include=" 'partials/model-method-view.html' "></div>
+                            <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel "> </div>
+                        
+                            <div ng-show="!Utils.isEmpty(javadocModel.interfaces)">
+                                <h3 class="tab-header"><span class="tab-label">Interfaces</span></h3>
+                                <div class="tab-body">
+                                <table class="table table-condensed table-striped model-list">
+                                    <tr ng-repeat="classDoc in javadocModel.interfaces | orderBy: 'name' ">
+                                        <td>
+                                            <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
+                                        </td>
+                                        <td>
+                                            <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </div>
                             </div>
-                            <div ng-switch-when="constructor">
-                                <div ng-include=" 'partials/model-method-view.html' "></div>
+                        
+                            <div ng-show="!Utils.isEmpty(javadocModel.ordinaryClasses)">
+                                <h3 class="tab-header"><span class="tab-label">Classes</span></h3>
+                                <div class="tab-body">
+                                <table class="table table-condensed table-striped model-list">
+                                    <tr ng-repeat="classDoc in javadocModel.ordinaryClasses | orderBy: 'name' ">
+                                        <td>
+                                            <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
+                                        </td>
+                                        <td>
+                                            <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </div>
                             </div>
-                            <div ng-switch-when="field">
-                                <div ng-include=" 'partials/model-field-view.html' "></div>
+                        
+                            <div ng-show="!Utils.isEmpty(javadocModel.enums)">
+                                <h3 class="tab-header"><span class="tab-label">Enums</span></h3>
+                                <div class="tab-body">
+                                <table class="table table-condensed table-striped model-list">
+                                    <tr ng-repeat="classDoc in javadocModel.enums | orderBy: 'name' ">
+                                        <td>
+                                            <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
+                                        </td>
+                                        <td>
+                                            <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </div>
                             </div>
-                            <div ng-switch-when="enumConstant">
-                                <div ng-include=" 'partials/model-enumConstant-view.html' "></div>
+                        
+                            <div ng-show="!Utils.isEmpty(javadocModel.annotationTypes)">
+                                <h3 class="tab-header"><span class="tab-label">Annotation Types</span></h3>
+                                <div class="tab-body">
+                                <table class="table table-condensed table-striped model-list">
+                                    <tr ng-repeat="classDoc in javadocModel.annotationTypes | orderBy: 'name' ">
+                                        <td>
+                                            <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
+                                        </td>
+                                        <td>
+                                            <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </div>
+                            </div>
+                        
+                            <div ng-show="!Utils.isEmpty(javadocModel.exceptions)">
+                                <h3 class="tab-header"><span class="tab-label">Exceptions</span></h3>
+                                <div class="tab-body">
+                                <table class="table table-condensed table-striped model-list">
+                                    <tr ng-repeat="classDoc in javadocModel.exceptions | orderBy: 'name' ">
+                                        <td>
+                                            <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
+                                        </td>
+                                        <td>
+                                            <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </div>
+                            </div>
+                        
+                            <div ng-show="!Utils.isEmpty(javadocModel.errors)">
+                                <h3 class="tab-header"><span class="tab-label">Errors</span></h3>
+                                <div class="tab-body">
+                                <table class="table table-condensed table-striped model-list">
+                                    <tr ng-repeat="classDoc in javadocModel.errors | orderBy: 'name' ">
+                                        <td>
+                                            <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
+                                        </td>
+                                        <td>
+                                            <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Library view -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLibrary(javadocModel)">
+                            <span class="code">{{javadocModel.lang}}</span>
+                            <br />
+                            <span class="h1">{{javadocModel.name}} {{javadocModel.version}}</span>
+                            
+                            <div class="vertical-spacer">&nbsp;</div>
+                        
+                            <h3 class="tab-header"><span class="tab-label">Packages</span></h3>
+                            <div class="tab-body">
+                            <table class="table table-condensed table-striped model-list">
+                                <tr ng-repeat="pkg in javadocModel.packages | orderBy: 'name'">
+                                    <td>
+                                        <a class="model-identifier" href="#{{pkg._id}}" ng-bind="pkg.name"></a>
+                                    </td>
+                                    <td>
+                                        <span ng-bind-html="pkg.firstSentenceTags | formatInlineTags:pkg.name:''"></span>
+                                    </td>
+                                </tr>
+                            </table>
+                            </div>
+                        
+                        </div>
+
+                        <!-- Library Versions view -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLibraryVersions(javadocModel)">
+                            <h1>{{javadocModel.name}}</h1>  
+                        
+                            <div class="vertical-spacer">&nbsp;</div>
+
+                            <h3 class="tab-header"><span class="tab-label">Versions</span></h3>
+                            <div class="tab-body">
+                                <ul class="table-condensed table-striped model-list">
+                                    <li ng-repeat="lib in javadocModel.versions | orderBy: 'version'">
+                                        <a class="model-identifier" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        
+                        </div>
+
+                        <!-- Lang view -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isLang(javadocModel)">
+                            <h1 ng-bind="javadocModel.name"></h1>
+                        
+                            <div class="vertical-spacer">&nbsp;</div>
+
+                            <h3 class="tab-header"><span class="tab-label">Libraries</span></h3>
+                            <div class="tab-body">
+                                <ul class="table-condensed table-striped model-list">
+                                    <li ng-repeat="lib in javadocModel.libraries | orderBy: 'name'">
+                                        <a class="model-identifier" href="#{{lib._id}}">{{lib.name}} {{lib.version}}</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        
+                        </div>
+
+                        <!-- Method/Field/Enum view -->
+                        <div ng-hide="requestPending" ng-if="JavadocModelUtils.isClassElement(javadocModel)">
+                            <div ng-switch on="javadocModel.metaType">
+                                <div ng-switch-when="method">
+                                    <div ng-include=" 'partials/model-method-view.html' "></div>
+                                </div>
+                                <div ng-switch-when="constructor">
+                                    <div ng-include=" 'partials/model-method-view.html' "></div>
+                                </div>
+                                <div ng-switch-when="field">
+                                    <div ng-include=" 'partials/model-field-view.html' "></div>
+                                </div>
+                                <div ng-switch-when="enumConstant">
+                                    <div ng-include=" 'partials/model-enumConstant-view.html' "></div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" -->
+
                     </div>
-
-
-                    <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" -->
-
                 </div>
             </div>
         </div>
@@ -438,7 +443,7 @@
     <!-- Footer -->
     <div class="vertical-spacer navbar navbar-inverse">
         <div class="container footer padding-lite">
-            a work in progress... <a href="mailto:info@surfapi.com">info@surfapi.com</a>
+            <span style="padding-right: 10px">a work in progress...</span> <a href="mailto:info@surfapi.com">info@surfapi.com</a>
         </div>
     </div>
     

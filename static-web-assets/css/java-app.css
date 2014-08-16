@@ -2,11 +2,11 @@
 @import url(bootstrap.min.css);
 
 body {
-    font-family: verdana, tahoma, 'lucida grande', verdana, arial, sans-serif, helvetica;
+    font-family: helvetica, serif,  verdana, tahoma, 'lucida grande', verdana, arial, sans-serif, helvetica;
 }
 
 hr {
-    border-bottom: solid 1px lightgray;
+    border-top: solid 1px #9eadc0;
 }
 
 /* To compensate for bootstrap.css, which sets margin-top to 0.  */
@@ -21,6 +21,17 @@ td {
     /* background-color: #f0f0f0;  */
 .bg-shade {
     background-color: #dee3e9; 
+}
+
+.full-blackout {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 9;
+    background-color: #666;
+    opacity: 0.5;
 }
 
 .blackout {
@@ -104,6 +115,24 @@ td {
     padding: 5px;
 }
 
+/**
+ * Override bootstrap.css
+ */
+.col-lg-10 {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+/**
+ * Override bootstrap.css
+ */
+code {
+    font-size: inherit;
+    color: inherit;
+    background-color: #f9f9f9;
+    font-weight: bold;
+}
+
 
 .comma-separated-list .list-item:after {
     content: ",";
@@ -128,11 +157,11 @@ td {
 .footer {
     font-size: small;
     text-align: right;
-    color: #999;
+    color: white;
 }
 
 .footer a {
-    color: #999;
+    color: white;
 }
 
 .meta-type-interface,
@@ -140,17 +169,69 @@ td {
     font-style: italic;
 }
 
+/**
+ * Override bootstrap.css
+ */
+.navbar {
+    margin-bottom: 0px;
+}
+
+/**
+ * Override bootstrap.css
+ */
+.navbar-inverse {
+    background-color: #2470f6; 
+    border-color: #9eadc0;
+    border-radius: 0px;
+}
+
+/**
+ * Override bootstrap.css
+ */
+.navbar-inverse
+.navbar-brand {
+    color: white;
+}
+
+/**
+ * Override bootstrap.css
+ */
+.form-control,
+.btn-default {
+    border-color: #9eadc0;
+}
+
 .nav-path-bar {
-    border-top: solid 1px #9eadc0;
     border-bottom: solid 1px #9eadc0;
     padding: 10px;
-    margin-top: 25px;
 }
 
 .nav-path-bar a {
     padding: 10px;
 }
 
+.nav-library-panel {
+}
+
+.nav-library-panel 
+.ontop {
+    z-index: 8;
+}
+
+.nav-library-panel 
+.full-blackout {
+    z-index: 7;
+}
+
+.nav-library-panel 
+.search-results-list {
+    width: 540px;
+}
+
+.javadoc-model-panel {
+    position: relative;
+    padding: 25px;
+}
 
 .ontop {
     z-index: 10;
@@ -274,6 +355,7 @@ ul {
 
 a {
     text-decoration: none !important;
+    color: #2470f6; /* override bootstrap.css */
 }
 
 .auto-complete-results a,
@@ -388,6 +470,11 @@ table.padding-horizontal-lite td:first-child {
     padding-bottom: 15px;
 }
 
+.search-results-list {
+    width: 100%;
+    max-height: 600px;
+    overflow: auto;
+}
 
 .text-right {
     text-align: right;
@@ -443,4 +530,5 @@ table.padding-horizontal-lite td:first-child {
     margin-top: 25px;
     margin-bottom: 25px;
 }
+
 
