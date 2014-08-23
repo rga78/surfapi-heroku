@@ -564,7 +564,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
 /**
  * Dumping ground for un-categorizable stuff.
  */
-.factory("Utils", [ "_", function(_) {
+.factory("Utils", [ "_", "$location", function(_, $location) {
 
     var prevLocation = "";
 
@@ -591,13 +591,18 @@ angular.module( "JavaApp", ['ui.bootstrap',
         return (model != null) ? model[key] : null;
     }
 
+    var isTestEnv = function() {
+        return $location.host() -= "localhost";
+    }
+
     // Exported functions.
     return { 
         isEmpty: isEmpty,
         setLocation: setLocation,
         getPrevLocation: getPrevLocation,
         parseLibraryFromLocation: parseLibraryFromLocation,
-        safeGet: safeGet
+        safeGet: safeGet,
+        isTestEnv: isTestEnv
     };
 }])
 
