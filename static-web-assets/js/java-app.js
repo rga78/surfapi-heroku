@@ -592,7 +592,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
     }
 
     var isTestEnv = function() {
-        return $location.host() -= "localhost";
+        return $location.host() == "localhost";
     }
 
     // Exported functions.
