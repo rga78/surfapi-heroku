@@ -203,6 +203,7 @@ code {
 
 .nav-path-bar {
     border-bottom: solid 1px #9eadc0;
+    border-top: solid 1px #9eadc0;
     padding: 10px;
 }
 

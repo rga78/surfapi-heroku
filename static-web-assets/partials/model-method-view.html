@@ -17,7 +17,6 @@
             <a class="model-identifier" ng-click="showFullDoc()">{{methodDoc.name}}</a>
 
             <!-- method signature (includes annotations on any parms) -->
-            <!-- (<span ng-bind-html="formatMethodSignature()"></span>) -->
             <sa-method-signature parameters="methodDoc.parameters" flat-signature="methodDoc.flatSignature"></sa-method-signature>
 
             <!-- throws clause -->
@@ -36,6 +35,8 @@
                     <b>Deprecated</b>
                     <i ng-bind-html="deprecatedTag.text"></i>
                 </p>
+
+                <img src="icons/ajax-loader-blue.gif" ng-if="ajaxLoading"/>
 
                 <!-- Method main javadoc comment -->
                 <div ng-bind-html="methodDoc.commentText | formatTags:methodDoc"></div>

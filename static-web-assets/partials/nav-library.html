@@ -1,28 +1,33 @@
 <div ng-controller="NavLibraryController" class="nav-library-panel">
     <div ng-if="libraryModelStub">
 
-        <h4 class="text-right overflow-hidden">
-            <a href="#{{libraryModelStub._id}}" title="{{libraryModelStub.name}} {{libraryModelStub.version}}">{{libraryModelStub.name}} {{libraryModelStub.version}}</a>
-        </h4>
-
         <div ng-include="'partials/search-bar.html'"></div>
         
+        <h4 class="text-right overflow-hidden">
+            <a ng-click="toggleShowLibrary()" title="View packages">{{libraryModelStub.name}} {{libraryModelStub.version}}</a>
+        </h4>
+
     </div>
 
-    <div ng-if="libraryModelStub" class="overflow-hidden">
-       <hr />
-       <h4><a ng-click="showPackages()">Packages</a></h4>
-       <ul class="padding-none">
-           <li class="padding-none" ng-repeat="model in libraryModel.packages | orderBy: 'name'">
-           <a href="#{{model._id}}" title="{{model.name}}">{{model.name}}</a>
-           </li>
-       </ul>
+    <div ng-if="libraryModel" class="overflow-hidden">
+        <h4 ng-if="!Utils.isEmpty(libraryModel.packages)"><span >Packages</span></h4>
+        <ul class="padding-none">
+            <li class="padding-none" ng-repeat="model in libraryModel.packages | orderBy: 'name'">
+                <a href="#{{model._id}}" title="{{model.name}}">{{model.name}}</a>
+            </li>
+        </ul>
+    </div>
+
+    <div ng-if="packageModelStub">
+        <hr />
+        <h4 class="text-right overflow-hidden">
+            <a ng-click="toggleShowPackage()" title="View classes">{{packageModelStub.name}}</a>
+        </h4>
     </div>
 
     <div ng-if="packageModel" class="overflow-hidden">
-        <hr />
 
-        <h4 class="text-right"><a href="#{{packageModel._id}}" title="{{model.name}}">{{packageModel.name}}</a></h4>
+        <!-- h4 class="text-right"><a href="#{{packageModel._id}}" title="{{packageModel.name}}">{{packageModel.name}}</a></h4 -->
 
         <div ng-if="!Utils.isEmpty(packageModel.interfaces)">
             <h4 ><span >Interfaces</span></h4>

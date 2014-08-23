@@ -9,6 +9,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
+import org.owasp.html.PolicyFactory;
+import org.owasp.html.Sanitizers;
 
 import com.mongodb.WriteConcern;
 import com.sun.javadoc.ClassDoc;
@@ -86,19 +88,51 @@ public class MongoDoclet extends JsonDoclet {
         // Process classes and add them to the db.
         for (ClassDoc classDoc : rootDoc.classes()) {
             Log.trace( this, "go: processing class: " + classDoc.qualifiedName() );
-            // safeSave( getLibraryId(), processClass(classDoc));
-            bulkWriter.safeInsert( (List<Map>) processClass(classDoc) );
+            
+            //bulkWriter.safeInsert( sanitizeHtml( (List<Map>) processClass(classDoc) ) );
+            bulkWriter.safeInsert( (List<Map>) processClass(classDoc) ) ;
         }
         
         // Add all packages to the db.
         Log.trace( this, "go: processing packages...");
-        bulkWriter.safeInsert( (List<Map>) processPackages( getPackageDocs() ))
+        // bulkWriter.safeInsert( (List<Map>) processPackages( getPackageDocs() ) )
+        bulkWriter.safeInsert( sanitizeHtml( (List<Map>) processPackages( getPackageDocs() ) ) )
                   .flush();
         
         // Create an "overview" or "summary" document for the library (contains package lists).
         safeSave(DB.LibraryCollectionName, Arrays.asList( createLibraryOverview() ) );
 
         return true;
+    }
+    
+    /**
+     * Sanitize all commentText fields.
+     * 
+     * @return javadocModels (modified in place) with all commentText fields sanitized.
+     */
+    protected List<Map> sanitizeHtml( List<Map> javadocModels ) {
+        for (Map javadocModel : javadocModels) {
+            sanitizeHtml(javadocModel);
+        }
+        return javadocModels;
+    }
+    
+    /**
+     * Html sanitizing.
+     */
+    private static final PolicyFactory HtmlSanitizationPolicy = Sanitizers.FORMATTING.and(Sanitizers.LINKS)
+                                                                                     .and(Sanitizers.BLOCKS)
+                                                                                     .and(Sanitizers.STYLES);
+                                                                                    // .and(Sanitizers.IMAGES)
+    
+    /**
+     * @return javadocModel (modified in place) with commentText field sanitized
+     */
+    protected Map sanitizeHtml( Map javadocModel ) {
+        if ( javadocModel.containsKey("commentText")) {
+            javadocModel.put("commentText", HtmlSanitizationPolicy.sanitize( (String) javadocModel.get("commentText") ) );
+        }
+        return javadocModel;
     }
         
     /**

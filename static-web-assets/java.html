@@ -161,6 +161,7 @@
                     
                             <!-- Main description -->
                             <div class="padding-vertical-lite">
+                                <!-- div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel | unsafe "></div -->
                                 <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel"></div>
                     
                                 <!-- block tags -->
@@ -431,7 +432,7 @@
                         </div>
 
 
-                        <!-- pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson" -->
+                        <pre style="clear: both; margin-top: 100px;" ng-bind="javadocModel | prettyPrintJson">
 
                     </div>
                 </div>

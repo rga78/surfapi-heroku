@@ -118,6 +118,13 @@
             <version>${jetty.version}</version>
         </dependency>
 
+        <!-- Trying out server-side html sanitizing -->
+        <dependency>
+        	<groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
+        	<artifactId>owasp-java-html-sanitizer</artifactId>
+        	<version>r239</version>
+        </dependency>
+
     </dependencies>
 
     <build>

@@ -176,7 +176,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
     _this.logging = { prefix: "RestService" };
 
     var onSuccess = function(data) {
-        Log.log(_this, "onSuccess: " + data._id);
+        Log.log(_this, "onSuccess: _id=" + data._id + ", name=" + data.name + ", metatype: " + data.metaType);
     }
 
     var buildUrl = function(uri) {
@@ -587,12 +587,17 @@ angular.module( "JavaApp", ['ui.bootstrap',
         return (m != null) ? m[1] : null;
     }
 
+    var safeGet = function(model, key) {
+        return (model != null) ? model[key] : null;
+    }
+
     // Exported functions.
     return { 
         isEmpty: isEmpty,
         setLocation: setLocation,
         getPrevLocation: getPrevLocation,
-        parseLibraryFromLocation: parseLibraryFromLocation
+        parseLibraryFromLocation: parseLibraryFromLocation,
+        safeGet: safeGet
     };
 }])
 
@@ -693,6 +698,11 @@ angular.module( "JavaApp", ['ui.bootstrap',
     }
 
     // Note: assumes model is NOT null
+    var getPackage = function(model) {
+        return ( isPackage(model) ) ? model : model.containingPackage;
+    }
+
+    // Note: assumes model is NOT null
     var getPackageId = function( model ) {
         return ( isPackage(model) ) ? model._id : getId( model.containingPackage );
     };
@@ -739,6 +749,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
         getId: getId,
         getMetaType: getMetaType,
         getPackageId: getPackageId,
+        getPackage: getPackage,
         getLibraryId: getLibraryId,
         getLibrary: getLibrary,
         getClassFor: getClassFor,
@@ -1335,10 +1346,12 @@ angular.module( "JavaApp", ['ui.bootstrap',
         $scope.showFullDocToggle = !$scope.showFullDocToggle;
 
         if ($scope.showFullDocToggle) {
+            $scope.ajaxLoading = true;
             RestService.get( _id )
                             .success( function(data) {
                                $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
                                $scope.model = data;
+                               $scope.ajaxLoading = false;
                             });
         }
     }
@@ -1346,7 +1359,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
     /**
      * Toggle the visibility of the full doc section.
      */
-    $scope.showFullDoc = function() {
+    var showFullDoc = function() {
 
         var id = getDocId();
 
@@ -1357,6 +1370,11 @@ angular.module( "JavaApp", ['ui.bootstrap',
                                  .then( showFullDocForId );
         }
     }
+
+    // Initialize and Export to scope.
+    $scope.showFullDocToggle = false;
+    $scope.ajaxLoading = false;
+    $scope.showFullDoc = showFullDoc;
 
     // If location.hash matches this doc id (meaning the user specifically looked up this method),
     // then automatically show the full doc section.
@@ -1466,7 +1484,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
                                               Utils) {
 
     var _this = this;
-    _this.logging = { prefix: "NavLibraryController" };
+    // _this.logging = { prefix: "NavLibraryController" };
 
 
     var currentLibraryId = null;
@@ -1482,28 +1500,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
         Log.log( _this, "$saJavadocModelChange: _id: " + JavadocModelUtils.getId(model) + ", showPackagesToggle: " + $scope.showPackagesToggle);
         
         setLibraryModelStub(JavadocModelUtils.getLibrary(model));
-
-        if ($scope.showPackagesToggle) {
-            switch (JavadocModelUtils.getMetaType(model)) {
-                case "package":
-                    showPackage(model);
-                    refreshLibrary( JavadocModelUtils.getLibraryId(model) );
-                    break;
-                case "library":
-                    showLibrary(model);
-                    clearPackage();
-                    break;
-                case "lang":
-                case "library.versions":
-                case null: 
-                    clearLibrary();
-                    break;
-                // Everything else is a javadoc program element
-                default:
-                    refreshLibrary( JavadocModelUtils.getLibraryId(model) );
-                    refreshPackage( JavadocModelUtils.getPackageId(model) );
-            }
-        }
+        setPackageModelStub(JavadocModelUtils.getPackage(model));
     });
 
     /**
@@ -1512,7 +1509,31 @@ angular.module( "JavaApp", ['ui.bootstrap',
      */
     var setLibraryModelStub = function(libraryModelStub) {
         $scope.libraryModelStub = libraryModelStub;
-        $scope.autoCompleteIndexName = libraryModelStub._id;
+        var _id = Utils.safeGet(libraryModelStub, "_id");
+        $scope.autoCompleteIndexName = _id;
+
+        Log.log( _this, "setLibraryModelStub: _id: " + _id );
+
+        if (currentLibraryId != _id) {
+            onLibraryChange( _id );
+        }
+    }
+
+    var setPackageModelStub = function(packageModelStub) {
+        $scope.packageModelStub = packageModelStub;
+        var _id = Utils.safeGet(packageModelStub, "_id");
+
+        if (currentPackageId != _id) {
+            onPackageChange( _id );
+        }
+    }
+
+    var onLibraryChange = function(newLibraryId) {
+        clearLibrary();
+    }
+
+    var onPackageChange = function(newPackageId) {
+        clearPackage();
     }
 
     var showPackage = function(model) {
@@ -1546,6 +1567,8 @@ angular.module( "JavaApp", ['ui.bootstrap',
      */
     var refreshPackage = function(newPackageId) {
 
+        Log.log(_this, "refreshPackage: current/new: " + currentPackageId + ", " + newPackageId);
+
         if ( newPackageId != currentPackageId ) {
             RestService.get( newPackageId )
                        .success( showPackage );
@@ -1558,19 +1581,24 @@ angular.module( "JavaApp", ['ui.bootstrap',
     };
 
     var clearLibrary = function() {
-        clearPackage();
         $scope.libraryModel = null;
-        $scope.autoCompleteIndexName = null;
         currentLibraryId = null;
     };
 
-    var showPackages = function() {
-        $scope.showPackagesToggle = !$scope.showPackagesToggle;
 
-        if ($scope.showPackagesToggle) {
-            refreshLibrary( $scope.libraryModelStub._id );
+    var toggleShowLibrary = function() {
+        if ( currentLibraryId != $scope.libraryModelStub._id ) {
+            refreshLibrary($scope.libraryModelStub._id);
         } else {
             clearLibrary();
+        }
+    }
+
+    var toggleShowPackage = function() {
+        if ( currentPackageId != $scope.packageModelStub._id ) {
+            refreshPackage($scope.packageModelStub._id);
+        } else {
+            clearPackage();
         }
     }
 
@@ -1581,17 +1609,15 @@ angular.module( "JavaApp", ['ui.bootstrap',
         return "#" + item.id;
     };
 
-
     // Export function to scope.
     $scope.Utils = Utils;
-    $scope.showPackages = showPackages;
+    $scope.toggleShowLibrary = toggleShowLibrary;
+    $scope.toggleShowPackage = toggleShowPackage;
 
-    $scope.showPackagesToggle = false;
-
-    // Override default placeholder text
+    // Override default placeholder text (for SearchController)
     $scope.placeholder = "Search this library...";
 
-    // Override the item href.
+    // Override the item href (for SearchController)
     $scope.getItemHref = getItemHref;
 
 }])
@@ -2101,7 +2127,14 @@ angular.module( "JavaApp", ['ui.bootstrap',
     };
 }])
 
-
+/**
+ * For trusting unsafe html.
+ */
+.filter('unsafe', [ "$sce", function($sce) {
+    return function(val) {
+        return $sce.trustAsHtml(val);
+    };
+}])
 
 /**
  * underscore.js support.
