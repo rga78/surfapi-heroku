@@ -18,9 +18,13 @@
 <body>
 
     <div class="navbar navbar-inverse" role="navigation">
-        <a class="navbar-brand" href="/" target="_self">Surf API</a>
+        <img src="icons/girl-surfboard.svg" class="surfapi-icon" />
+        <a class="navbar-brand" href="/" target="_self">Surf &nbsp;API : Java API repository</a>
         <div class="container">
             <div class="col-md-6 pull-left" style="padding-top: 8px" ng-include="'partials/search-bar.html'"></div>
+            <div class="pull-right footer padding-lite">
+                <span style="padding-right: 10px">a work in progress...</span> <a href="mailto:info@surfapi.com">info@surfapi.com</a>
+            </div>
         </div>
     </div>
     
@@ -44,7 +48,7 @@
     <!-- Primary content -->
     <div class="container-fluid">
 
-        <div class="row bg-gray">
+        <div class="row">
 
             <!-- Left panel library/package list -->
             <div class="col-lg-2 nav-library-panel">
@@ -55,11 +59,11 @@
             <div class="col-lg-10 border-left-thick" >
 
                 <!-- Nav path bar -->
-                <div class="nav-path-bar" ng-include="'partials/nav-path-bar.html'"></div>
+                <div class="nav-path-bar bg-gray" ng-include="'partials/nav-path-bar.html'"></div>
 
                 <div class="javadoc-model-panel">
 
-                    <div ng-show="requestPending" class="blackout fade in" > </div>
+                    <img src="icons/ajax-loader-blue.gif" ng-if="requestPending"/>
 
                     <div ng-controller="JavadocController">
 
@@ -440,14 +444,6 @@
         </div>
     </div>
 
-
-    <!-- Footer -->
-    <div class="navbar navbar-inverse">
-        <div class="container footer padding-lite">
-            <span style="padding-right: 10px">a work in progress...</span> <a href="mailto:info@surfapi.com">info@surfapi.com</a>
-        </div>
-    </div>
-    
 
 </body>
 </html>
