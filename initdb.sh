@@ -27,14 +27,18 @@ MONGOLAB_TEST=mongodb://localhost/test
 ./sajavadoc.sh $MONGOLAB_TEST /java/jaxrs/2.3.1 -sourcepath /fox/tmp/surfapi-heroku/jaxrs-api-2.3.1 -subpackages javax
 
 ./sajavadoc.sh $MONGOLAB_TEST /java/org.osgi.core/5.0.0 -sourcepath /fox/tmp/surfapi-heroku/org.osgi.core-5.0.0 -subpackages org
+export JAVADOC_CP=/fox/tmp/surfapi-heroku/org.osgi.core-5.0.0.jar; ./sajavadoc.sh $MONGOLAB_TEST /java/org.osgi.enterprise/5.0.0 -sourcepath /fox/tmp/surfapi-heroku/org.osgi.enterprise-5.0.0 -subpackages org; export JAVADOC_CP=
 
 ./sajavadoc.sh $MONGOLAB_TEST /java/apache-commons-lang3/3.3.2 -sourcepath /fox/tmp/surfapi-heroku/commons-lang3-3.3.2-src/src/main/java -subpackages org
 ./sajavadoc.sh $MONGOLAB_TEST /java/apache-commons-io/2.4 -sourcepath /fox/tmp/surfapi-heroku/commons-io-2.4-src/src/main/java -subpackages org
 ./sajavadoc.sh $MONGOLAB_TEST /java/apache-commons-net/3.3 -sourcepath /fox/tmp/surfapi-heroku/commons-net-3.3-src/src/main/java -subpackages org
 ./sajavadoc.sh $MONGOLAB_TEST /java/apache-commons-collections4/4.0 -sourcepath /fox/tmp/surfapi-heroku/commons-collections4-4.0-src/src/main/java -subpackages org
 
-# TODO: not all source files have javadoc
-./sajavadoc.sh $MONGOLAB_TEST /java/javaee/6.0 -sourcepath /fox/tmp/surfapi-heroku/javaee-api-6.0 -subpackages javax
+./sajavadoc.sh $MONGOLAB_TEST /java/htmlunit/2.15 -J-Dfile.encoding=UTF-8 -sourcepath /fox/tmp/surfapi-heroku/htmlunit-2.15 -subpackages com -subpackages netscape
+
+# DONE: not all source files have javadoc. v7 has them (downloaded from maven repo)
+# ./sajavadoc.sh $MONGOLAB_TEST /java/javaee/6.0 -sourcepath /fox/tmp/surfapi-heroku/javaee-api-6.0 -subpackages javax
+./sajavadoc.sh $MONGOLAB_TEST /java/javaee/7.0 -sourcepath /fox/tmp/surfapi-heroku/javaee-api-7.0 -subpackages javax
 
 ./sajavadoc.sh $MONGOLAB_TEST /java/junit/4.11 \
     -sourcepath "/fox/tmp/surfapi-heroku/junit/src/main/java;/fox/tmp/surfapi-heroku/hamcrest-all-1.3" \

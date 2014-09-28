@@ -170,7 +170,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
  * TODO: not sure if this really serves a purpose other than wrapping $http calls
  *       with tracing and an onError function.
  */
-.factory("RestService", [ '$http', 'Log', function($http, Log) {
+.factory("RestService", [ '$http', '$modal', 'Log', function($http, $modal, Log) {
 
     var _this = this;
     _this.logging = { prefix: "RestService" };
@@ -184,8 +184,22 @@ angular.module( "JavaApp", ['ui.bootstrap',
     }
 
     var onError = function(data, status, headers, config) {
-        alert("RestService (url = " + config.url + ") didn't work: " + status + ": " + data);
+        // alert("RestService (url = " + config.url + ") didn't work: " + status + ": " + data);
         // TODO: create modal with option to send error message to me for diagnosing.
+        
+        $modal.open({
+            templateUrl: 'partials/modal-message.html',
+            controller: "ModalMessageController",
+            // "resolve" contains scope variables resolved for modal-message.html template
+            resolve: {
+                message: function() { 
+                             return data;
+                         },
+                title: function() { 
+                             return "Error: " + status;
+                         }
+            }
+        });
     };
     
     /**
@@ -929,7 +943,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
      * TODO: would prefer the model from the most recent library.
      *
      * @return a promise that when fulfilled returns the _id of the first model
-     *         returned by the reference name query.
+     *         returned by the reference name query, or null if no models are returned.
      */
     var resolveFirstId = function(referenceName) {
 
@@ -1357,7 +1371,9 @@ angular.module( "JavaApp", ['ui.bootstrap',
                                $scope[ ViewModelService.getScopeName(data) ] = ViewModelService.transform( data );
                                $scope.model = data;
                                $scope.ajaxLoading = false;
-                            });
+                            }).finally( function() {
+                               $scope.ajaxLoading = false;
+                            }) ;
         }
     }
 

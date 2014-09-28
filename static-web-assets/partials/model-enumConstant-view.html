@@ -15,6 +15,9 @@
             <a class="model-identifier" ng-click="showFullDoc()">{{fieldDoc.name}}</a>
         </div>
         <div ng-show="showFullDocToggle" >
+
+            <img src="icons/ajax-loader-blue.gif" ng-if="ajaxLoading"/>
+
             <p class="vertical-spacer" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></p>
 
             <!-- block tags -->

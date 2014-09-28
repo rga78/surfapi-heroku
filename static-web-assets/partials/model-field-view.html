@@ -17,6 +17,9 @@
             <span ng-if="!Utils.isEmpty(fieldDoc.constantValueExpression)">= {{fieldDoc.constantValueExpression}}</span>
         </div>
         <div ng-show="showFullDocToggle" >
+
+            <img src="icons/ajax-loader-blue.gif" ng-if="ajaxLoading"/>
+
             <div class="padding-vertical-lite" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></div>
 
             <!-- block tags -->

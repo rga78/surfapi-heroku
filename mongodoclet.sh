@@ -26,9 +26,16 @@ shift
 dp=target/classes
 for x in `find target/dependency`; do dp="$dp;$x"; done
 
+# include classpath if set
+cp=
+if [ -n "$JAVADOC_CP" ]; then
+    cp="-classpath $JAVADOC_CP"
+fi
+
 javadoc \
         -doclet com.surfapi.javadoc.MongoDoclet \
         -docletpath "$dp" \
+        $cp \
         -J-Xms1024m \
         -J-Xmx4096m \
         -J-DMONGOLAB_URI=$MONGOLAB_URI \
