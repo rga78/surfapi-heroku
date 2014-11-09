@@ -156,3 +156,155 @@ describe('Testing saType directive', function() {
 
 });
 
+describe('Testing filter formatTags', function() {
+    var formatTagsFilter;
+
+    /**
+     * Load the module and inject the formatTags filter into the test code.
+     */
+    beforeEach( function() {
+
+        module("JavaApp");
+
+        // Filters are injected via "<filter-name>Filter", just cuz.
+        inject( function(_formatTagsFilter_) {
+            formatTagsFilter = _formatTagsFilter_;
+        });
+    });
+
+
+
+    it("should format @link tag", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@link java.io.FileReader bad link}"; 
+        var expectedOutput = "hello <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader" + "'>" + " bad link" + "</a></span>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+    it("should format @link tag with no link text", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@link java.io.FileReader}"; 
+        var expectedOutput = "hello <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader" + "'>" + "java.io.FileReader" + "</a></span>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+    it("should format @link tag across newlines", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@link java.io.FileReader bad link}"; 
+        var expectedOutput = "hello <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader" + "'>" + " bad link" + "</a></span>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+
+        var input2 = input + " blah {@link java.io.FileReader#read working\nlink}";
+        var expectedOutput2 = expectedOutput + " blah <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader+read" + "'>" + " working\nlink" + "</a></span>";
+        expect(formatTagsFilter(input2, javadocModel)).toBe(expectedOutput2);
+
+    });
+
+
+    it("should format @linkplain tag", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@linkplain java.io.FileReader bad link}"; 
+        var expectedOutput = "hello <a href='#/q/java/qn/" + "java.io.FileReader" + "'>" + " bad link" + "</a>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+    it("should format package-relative @link tag", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@link FileReader link text}"; 
+        var expectedOutput = "hello <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader" + "'>" + " link text" + "</a></span>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+
+    it("should format class-relative @link tag", function() {
+
+        var packageModel = { metaType: "package",
+                             name: "java.io" };
+        var javadocModel = { metaType: "class",
+                             containingPackage: packageModel,
+                             name: "FileReader" };
+            
+        // TODO: notice that "#read" is converted to ".read". Would be nice to be smart enough not to include the leading ".".
+        var input = "hello {@link #read}"; 
+        var expectedOutput = "hello <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader+read" + "'>.read</a></span>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+
+    it("should format @code tag", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@link java.io.FileReader bad link} along with {@code some code }"; 
+        var expectedOutput = "hello <span class='code'><a href='#/q/java/qn/" + "java.io.FileReader" + "'>" + " bad link" + "</a></span>"
+                              + " along with <code>some code </code>";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+
+    it("should not format unknown tags", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@code some code } {@same }"; 
+        var expectedOutput = "hello <code>some code </code> {@same }";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+    it("should format @literal tags", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "hello {@literal hypothetical <b>BOLD</b>}"; 
+        var expectedOutput = "hello hypothetical &lt;b&gt;BOLD&lt;/b&gt;";
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+    it("doesn't format @value tags yet", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "The value of this field is {@value}"; 
+        var expectedOutput = "The value of this field is {@value}"; 
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+
+        var input2 =  "Evaluates the script starting with {@value #SCRIPT_START}.";
+        var expectedOutput2 =  "Evaluates the script starting with {@value #SCRIPT_START}.";
+        expect(formatTagsFilter(input2, javadocModel)).toBe(expectedOutput2);
+    });
+
+    it("should format encoded tags... or should it?", function() {
+
+        var javadocModel = { metaType: "package",
+                             name: "java.io" };
+
+        var input = "{&#64;linkplain javax.enterprise.context lifecycle context model}"
+        var expectedOutput = "<a href='#/q/java/qn/" + "javax.enterprise.context" + "'>" + " lifecycle context model" + "</a>";
+
+        expect(formatTagsFilter(input, javadocModel)).toBe(expectedOutput);
+    });
+
+});
+
+
+
+

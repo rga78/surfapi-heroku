@@ -403,6 +403,9 @@ angular.module( "JavaApp", ['ui.bootstrap',
     };
 
     /**
+     * Regex for the <link> portion of a @link tag (@link not included)
+     * {@link <link>}
+     *
      * m[0] = entire match
      * m[1] = class name (potentially fully qualified)
      * m[2] = #m[3]m[4]
@@ -410,7 +413,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
      * m[4] = method parms
      * m[5] = text
      */
-    var linkTagRegExp = /^\s*([^\s#]*)(#([^\s()]*)(\(.*?\))?)?(\s+\S.*)?/;
+    var linkTagRegExp = /^\s*([^\s#]*)(#([^\s()]*)(\(.*?\))?)?(\s+\S[\s\S]*)?/;
 
     var formatLinkTag = function(tag, packageName, className) {
         return "<span class='code'>" + formatLinkplainTag(tag, packageName, className) + "</span>";
@@ -511,7 +514,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
             case "@code":
                 return formatCodeTag(tag);
             case "@docRoot":
-                return "{@docRoot " + tag.text + "}"; // TODO
+                return tag.fullText;  // TODO
             case "@inheritDoc":
                 return "{@inheritDoc}"; 
             case "@link":
@@ -521,9 +524,9 @@ angular.module( "JavaApp", ['ui.bootstrap',
             case "@literal":
                 return formatLiteralTag(tag);
             case "@value":
-                return "{@value " + tag.text + "}"; // TODO
+                return tag.fullText ; // TODO
             default:
-                return tag.text;
+                return tag.fullText;
         }
 
     };
@@ -1505,8 +1508,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
                                               Utils) {
 
     var _this = this;
-    // _this.logging = { prefix: "NavLibraryController" };
-
+    _this.logging = { prefix: "NavLibraryController" };
 
     var currentLibraryId = null;
     var currentPackageId = null;
@@ -1568,6 +1570,14 @@ angular.module( "JavaApp", ['ui.bootstrap',
         $scope.autoCompleteIndexName = $scope.libraryModel._id;
     };
 
+    var refreshLibraryRequestPending = function(isPending) {
+        $scope.refreshLibraryRequestPending = isPending;
+    };
+
+    var refreshPackageRequestPending = function(isPending) {
+        $scope.refreshPackageRequestPending = isPending;
+    };
+
     /**
      * Refresh the library nav view (package list) if the library has changed.
      */
@@ -1575,10 +1585,15 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
         Log.log(_this, "refreshLibrary: current/new: " + currentLibraryId + ", " + newLibraryId);
 
+        refreshLibraryRequestPending(true);
+
         if ( newLibraryId != currentLibraryId ) {
 
             RestService.get( newLibraryId )
-                       .success( showLibrary );
+                       .success( showLibrary )
+                       .finally( function() {
+                            refreshLibraryRequestPending(false);
+                       }) ;
         }
     };
 
@@ -1590,9 +1605,14 @@ angular.module( "JavaApp", ['ui.bootstrap',
 
         Log.log(_this, "refreshPackage: current/new: " + currentPackageId + ", " + newPackageId);
 
+        refreshPackageRequestPending(true);
+
         if ( newPackageId != currentPackageId ) {
             RestService.get( newPackageId )
-                       .success( showPackage );
+                       .success( showPackage )
+                       .finally( function() {
+                                     refreshPackageRequestPending(false);
+                                 }) ;
         }
     };
 
@@ -1665,19 +1685,24 @@ angular.module( "JavaApp", ['ui.bootstrap',
 })
 
 /**
- * TODO: need more unit tests (just a general reminder... not specific to this filter...)
  * 
  */
 .filter('formatTags', [ "Formatter", "_", "Utils", "JavadocModelUtils", 
                        function(Formatter, _, Utils, JavadocModelUtils) {
 
-    var inlineTagRegex = /\{(\@[^\s\}]+)(?:\s*)?([^\}]*)?\}/g;
+    /**
+     * Captures tagname, tag text
+     *
+        var input = "{&#64;linkplain javax.enterprise.context lifecycle context model}"
+     */
+    var inlineTagRegex = /\{((?:\@|&#64;)[^\s\}]+)(?:\s*)?([^\}]*)?\}/g;
 
     var parseInlineTags = function(input) {
         var retMe = [];
         var m;
         while (m = inlineTagRegex.exec(input)) {
-            retMe.push( { fullText: m[0], name: m[1], text: m[2] } );
+            // console.log("input: " + input + ", name: " + m[1] + ", text: " + m[2]);
+            retMe.push( { fullText: m[0], name: m[1].replace("&#64;","@"), text: m[2] } );
         }
         return retMe;
     };
@@ -1695,23 +1720,10 @@ angular.module( "JavaApp", ['ui.bootstrap',
         return _.reduce(formattedTags, function(memo, tag) { return memo.replace(tag.fullText, tag.formattedText); }, input);
     }
 
-    // TODO: write some unit tests for this (now that i finally know how to ut js)
-    // testing: var input = "hello {@link java.io.FileReader bad link} and {@link java.io.FileReader#read working\nlink} blah {@inheritDoc} {@same } blah {@code some code }";
-    // testing: console.log("filter.formatTags: parseInlineTags: " + JSON.stringify(parseInlineTags(input)));
-    // testing: console.log("filter.formatTags: formatTags: " + formatTags(input));
-
     return function(input, currentModel) {
         // console.log("filter.formatTags: input: " + input);
         // console.log("filter.formatTags: currentModel: " + JSON.stringify(currentModel, undefined, 2) );
         return (Utils.isEmpty(input)) ? input : formatTags(input, currentModel);
-        // -rx- if (Utils.isEmpty(input)) {
-        // -rx-     return input;
-        // -rx- }
-
-        // -rx- console.log("filter.formatTags: input: " + input);
-        // -rx- console.log("filter.formatTags: currentModel: " + currentModel._id );
-
-        // -rx- return formatTags(input, currentModel);
     };
 }])
 

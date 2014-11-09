@@ -7,6 +7,7 @@
             <h4 class="text-right overflow-hidden">
                 <a ng-click="toggleShowLibrary()" title="View packages">{{libraryModelStub.name}} {{libraryModelStub.version}}</a>
             </h4>
+            <img src="icons/ajax-loader-blue.gif" ng-if="refreshLibraryRequestPending"/>
         </div>
 
         <div ng-if="libraryModel" class="overflow-hidden">
@@ -23,6 +24,7 @@
             <h4 class="text-right overflow-hidden">
                 <a ng-click="toggleShowPackage()" title="View classes">{{packageModelStub.name}}</a>
             </h4>
+            <img src="icons/ajax-loader-blue.gif" ng-if="refreshPackageRequestPending"/>
         </div>
 
         <div ng-if="packageModel" class="overflow-hidden">
