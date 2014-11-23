@@ -42,6 +42,14 @@ import java.util.concurrent.Callable;
 * Here's some <code>code within a code tag </code>.
 *
 * Compared to the @{code at-code tag, with malicious script: <script>window.alert("hello from DemoJavadoc.commentText.@code")</script>}
+*
+* An unordered list:
+*
+* <ul>
+*   <li>item one</li>
+*   <li>item two</li>
+*   <li>item three</li>
+* </ul>
 * 
 * @param <T> A generic type parm T, extends List
 * 

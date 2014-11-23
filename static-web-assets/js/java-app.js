@@ -514,7 +514,7 @@ angular.module( "JavaApp", ['ui.bootstrap',
             case "@code":
                 return formatCodeTag(tag);
             case "@docRoot":
-                return tag.fullText;  // TODO
+                return tag.fullText || tag.text;  // TODO
             case "@inheritDoc":
                 return "{@inheritDoc}"; 
             case "@link":
@@ -524,9 +524,9 @@ angular.module( "JavaApp", ['ui.bootstrap',
             case "@literal":
                 return formatLiteralTag(tag);
             case "@value":
-                return tag.fullText ; // TODO
+                return tag.fullText  || tag.text; // TODO
             default:
-                return tag.fullText;
+                return tag.fullText || tag.text;
         }
 
     };
@@ -1732,7 +1732,10 @@ angular.module( "JavaApp", ['ui.bootstrap',
  */
 .filter('formatInlineTags', ["Formatter", function(Formatter) {
     return function(tags, packageName, className) {
-        return Formatter.formatInlineTags(tags, packageName, className);
+        // console.log("filter.formatInlineTags: packagename: " + packageName + "; classname: " + className + "; tags: " + JSON.stringify(tags));
+        var retMe = Formatter.formatInlineTags(tags, packageName, className);
+        // console.log("filter.formatInlineTags: retMe: " + retMe);
+        return retMe;
     }
 }])
 

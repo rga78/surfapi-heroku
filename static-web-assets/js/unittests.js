@@ -166,7 +166,7 @@ describe('Testing filter formatTags', function() {
 
         module("JavaApp");
 
-        // Filters are injected via "<filter-name>Filter", just cuz.
+        // Filters are injected via "_<filter-name>Filter_", just cuz.
         inject( function(_formatTagsFilter_) {
             formatTagsFilter = _formatTagsFilter_;
         });
@@ -307,4 +307,40 @@ describe('Testing filter formatTags', function() {
 
 
 
+describe('Testing filter formatInlineTags', function() {
+    var formatInlineTagsFilter;
+
+    /**
+     * Load the module and inject the formatTags filter into the test code.
+     */
+    beforeEach( function() {
+
+        module("JavaApp");
+
+        // Filters are injected via "_<filter-name>Filter_", just cuz.
+        inject( function(_formatInlineTagsFilter_) {
+            formatInlineTagsFilter = _formatInlineTagsFilter_;
+        });
+    });
+
+
+    it("should format simple text tag", function() {
+
+        var javadocModel = { 
+                                "metaType": "package",
+                                "firstSentenceTags": [
+                                  {
+                                    "text": "Javadoc for the package, from package-info.",
+                                    "name": "Text",
+                                    "kind": "Text"
+                                  }
+                                ],
+                                "_id": "/java/com.surfapi/1.0/com.surfapi.test",
+                                "name": "com.surfapi.test"
+                            };
+            
+        var expectedOutput = "Javadoc for the package, from package-info.";
+        expect(formatInlineTagsFilter(javadocModel.firstSentenceTags, javadocModel.name)).toBe(expectedOutput);
+    });
+});
 

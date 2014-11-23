@@ -18,7 +18,7 @@
 
             <img src="icons/ajax-loader-blue.gif" ng-if="ajaxLoading"/>
 
-            <p class="vertical-spacer" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></p>
+            <p class="vertical-spacer commentText" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></p>
 
             <!-- block tags -->
             <div ng-include="'partials/block-tags.html'" onload="model=fieldDoc"></div>

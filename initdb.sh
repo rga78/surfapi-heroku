@@ -62,3 +62,5 @@ export JAVADOC_CP=/fox/tmp/surfapi-heroku/org.osgi.core-5.0.0.jar; ./sajavadoc.s
     org.hamcrest
 
 
+./sajavadoc.sh $MONGOLAB_TEST /java/gson/2.3.1 -sourcepath "/fox/tmp/surfapi-heroku/gson-2.3.1" -subpackages com
+

@@ -364,9 +364,23 @@ a:hover, .hover-pointer {
     text-align: center;
 }
 
+
 ul {
     list-style-type: none;
 }
+
+.commentText ul {
+    list-style-type: disc;
+}
+
+td.firstSentenceTags {
+    width: 100%;
+}
+
+td.firstSentenceTags span {
+    padding-left: 15px;
+}
+
 
 .auto-complete-results ul {
     /* font-size: 130%; */

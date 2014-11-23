@@ -177,7 +177,7 @@
                             <!-- Main description -->
                             <div class="padding-vertical-lite">
                                 <!-- div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel | unsafe "></div -->
-                                <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel"></div>
+                                <div class="padding-vertical-lite commentText" ng-bind-html="javadocModel.commentText | formatTags:javadocModel"></div>
                     
                                 <!-- block tags -->
                                 <div ng-if="!Utils.isEmpty(JavadocModelUtils.getUnformattedTags(javadocModel.tags))">
@@ -271,7 +271,7 @@
                             <h1 style="margin-top:0" ng-bind="javadocModel.name"></h1>
                             <hr />
                         
-                            <div class="padding-vertical-lite" ng-bind-html="javadocModel.commentText | formatTags:javadocModel "> </div>
+                            <div class="padding-vertical-lite commentText" ng-bind-html="javadocModel.commentText | formatTags:javadocModel "> </div>
                         
                             <div ng-show="!Utils.isEmpty(javadocModel.interfaces)">
                                 <h3 class="tab-header"><span class="tab-label">Interfaces</span></h3>
@@ -281,7 +281,7 @@
                                         <td>
                                             <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
                                         </td>
-                                        <td>
+                                        <td class="firstSentenceTags">
                                             <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
                                         </td>
                                     </tr>
@@ -297,7 +297,7 @@
                                         <td>
                                             <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
                                         </td>
-                                        <td>
+                                        <td class="firstSentenceTags">
                                             <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
                                         </td>
                                     </tr>
@@ -313,7 +313,7 @@
                                         <td>
                                             <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
                                         </td>
-                                        <td>
+                                        <td class="firstSentenceTags">
                                             <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
                                         </td>
                                     </tr>
@@ -329,7 +329,7 @@
                                         <td>
                                             <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
                                         </td>
-                                        <td>
+                                        <td class="firstSentenceTags">
                                             <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
                                         </td>
                                     </tr>
@@ -345,7 +345,7 @@
                                         <td>
                                             <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
                                         </td>
-                                        <td>
+                                        <td class="firstSentenceTags">
                                             <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
                                         </td>
                                     </tr>
@@ -361,7 +361,7 @@
                                         <td>
                                             <a class="model-identifier" href="#{{classDoc._id}}">{{classDoc.name}}</a>
                                         </td>
-                                        <td>
+                                        <td class="firstSentenceTags">
                                             <span ng-bind-html="classDoc.firstSentenceTags | formatInlineTags:javadocModel.name:classDoc.name"></span>
                                         </td>
                                     </tr>
@@ -385,7 +385,7 @@
                                     <td>
                                         <a class="model-identifier" href="#{{pkg._id}}" ng-bind="pkg.name"></a>
                                     </td>
-                                    <td>
+                                    <td class="firstSentenceTags">
                                         <span ng-bind-html="pkg.firstSentenceTags | formatInlineTags:pkg.name:''"></span>
                                     </td>
                                 </tr>

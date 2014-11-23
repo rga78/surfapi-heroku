@@ -20,7 +20,7 @@
 
             <img src="icons/ajax-loader-blue.gif" ng-if="ajaxLoading"/>
 
-            <div class="padding-vertical-lite" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></div>
+            <div class="padding-vertical-lite commentText" ng-bind-html="fieldDoc.commentText | formatTags:fieldDoc"></div>
 
             <!-- block tags -->
             <div ng-include="'partials/block-tags.html'" onload="model=fieldDoc"></div>
