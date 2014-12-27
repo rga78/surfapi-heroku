@@ -31,6 +31,15 @@ td {
     background-color: #eeeee9; */
 }
 
+.search-button-disable {
+    padding-bottom: 7px;
+}
+
+.search-button-disable:hover {
+    cursor: default;
+    background-color: white;
+}
+
 .full-blackout {
     position: fixed;
     top: 0;
