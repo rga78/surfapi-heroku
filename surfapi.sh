@@ -1,4 +1,10 @@
 #!/bin/sh
+#
+# 
+# To rebuild an index from scratch:
+# ./surfapi.sh $MONGOLAB_TEST buildIndex --index=ReferenceNameQuery
+#
+#
 
 if [ -z $2 ]; then
     echo "usage: $0 <mongo-uri> [action] [options]"
