@@ -2,45 +2,48 @@
 
 [http://www.rga78.com/blog?category=surfapi](http://www.rga78.com/blog?category=surfapi)
 
+[surfapi.com](surfapi.com)
+
 
 ### Build and test
 
 Note: must run mvn package before running tests in order to copy dependency jars into 
 the target directory (some of the tests need them).
 
-$ mvn package -DskipTests=true
-$ mvn test
+    $ mvn package -DskipTests=true
+    $ mvn test
 
 
 ### Running in local sandbox
 
 1. Start mongo
-
+```
     $ ./startMongo.sh
 
     // connect to mongo
     $ mongo localhost/test
+```
 
 2. Start appserver  
     
-    $ . ./mongolab.env
-    $ export MONGOLAB_URI=$MONGOLAB_TEST
-    $ ./startServer.sh MongoMain
+        $ . ./mongolab.env
+        $ export MONGOLAB_URI=$MONGOLAB_TEST
+        $ ./startServer.sh MongoMain
 
 
 ### Git
 
-$ git push -u origin master
-$ git push -u origin heroku
+    $ git push -u origin master
+    $ git push -u origin heroku
 
 
 ### Upgrade from 2.4 to 2.6:
 
 1. Installed mongo 2.6 locally (from binary)
 2. Launched mongod v 2.6 (reads data from same place as 2.4:  /data/db)
-3. Connect to local mongo:
-    $ mongo localhost/test
-Connect to remote mongo:
+3. Connect to local mongo:  
+    $ mongo localhost/test   
+Connect to remote mongo:   
     $ mongo ds055459-a0.mongolab.com:55459/prod1 -u <dbuser> -p <dbpassword>
 4. db.upgradeCheck()  
 
