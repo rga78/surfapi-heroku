@@ -43,6 +43,9 @@ public class MongoDBImpl implements DB {
     }
     
     /**
+     * TODO: Precedence: env var, system property, dbName
+     * That seems backwards.
+     *
      * @return the mongodb uri
      */
     protected String getMongoUri(String dbName) {

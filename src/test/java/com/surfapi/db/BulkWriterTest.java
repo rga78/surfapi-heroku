@@ -13,6 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import com.mongodb.WriteConcern;
+import com.mongodb.BulkWriteException;
 import com.surfapi.coll.MapBuilder;
 import com.surfapi.json.JSONTrace;
 import com.surfapi.junit.CaptureSystemOutRule;
@@ -64,25 +65,25 @@ public class BulkWriterTest {
         
         BulkWriter bulkWriter = new BulkWriter(db, "test.collection").setFlushCount(3);
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "1") );
-        bulkWriter.insert( new MapBuilder().append( "_id", "2") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "1").append( "nonIdField", "hi" ) );
+        bulkWriter.insert( new MapBuilder().append( "_id", "2").append( "nonIdField", "hi" ) );
         
         // hasn't been flushed yet.
         assertNull( db.read("test.collection", "1") );
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "3") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "3").append( "nonIdField", "hi" ) );
         
         assertNotNull( db.read("test.collection", "1") );
         assertNotNull( db.read("test.collection", "2") );
         assertNotNull( db.read("test.collection", "3") );
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "4") );
-        bulkWriter.insert( new MapBuilder().append( "_id", "5") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "4").append( "nonIdField", "hi" ) );
+        bulkWriter.insert( new MapBuilder().append( "_id", "5").append( "nonIdField", "hi" ) );
         
         // hasn't been flushed yet.
         assertNull( db.read("test.collection", "4") );
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "6") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "6").append( "nonIdField", "hi" ) );
         
         assertNotNull( db.read("test.collection", "4") );
         assertNotNull( db.read("test.collection", "5") );
@@ -90,6 +91,23 @@ public class BulkWriterTest {
 
     }
     
+    /**
+     * Should bomb because we move the _id field from the map for the upsert
+     * and this causes mongo to complain cuz we're not actually updating anything.
+     */
+    @Test(expected=BulkWriteException.class)
+    public void testBulkWriteEmptyDocument()  {
+
+        assumeTrue( mongoDBProcessRule.isStarted() );
+        
+        MongoDBImpl db = new MongoDBImpl(MongoDbName);
+        
+        BulkWriter bulkWriter = new BulkWriter(db, "test.collection").setFlushCount(3);
+        
+        bulkWriter.insert( new MapBuilder().append( "_id", "1") );
+        bulkWriter.flush();
+    }
+
     /**
      * 
      */
@@ -105,8 +123,8 @@ public class BulkWriterTest {
         BulkWriter bulkWriter = new BulkWriter(db, "test.collection").setFlushCount(3)
                                                                      .setWriteConcern( WriteConcern.UNACKNOWLEDGED );
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "1") );
-        bulkWriter.insert( new MapBuilder().append( "_id", "2") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "1").append( "nonIdField", "hi" ) );
+        bulkWriter.insert( new MapBuilder().append( "_id", "2").append( "nonIdField", "hi" ) );
         bulkWriter.flush();
         
         // Kind of hackish.  Since the write is unacknowledged, it goes async, which means
@@ -135,8 +153,8 @@ public class BulkWriterTest {
         
         BulkWriter bulkWriter = new BulkWriter(db, "test.collection").setFlushCount(3);
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "1") );
-        bulkWriter.insert( new MapBuilder().append( "_id", "2") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "1").append( "nonIdField", "hi" ) );
+        bulkWriter.insert( new MapBuilder().append( "_id", "2").append( "nonIdField", "hi" ) );
         bulkWriter.flush();
         
         assertNotNull( db.read("test.collection", "1") );
@@ -160,8 +178,8 @@ public class BulkWriterTest {
         
         BulkWriter bulkWriter = new BulkWriter(db, "test.collection").setFlushCount(3);
         
-        bulkWriter.insert( new MapBuilder().append( "_id", "1") );
-        bulkWriter.insert( new MapBuilder().append( "_id", "2") );
+        bulkWriter.insert( new MapBuilder().append( "_id", "1").append( "nonIdField", "hi" ) );
+        bulkWriter.insert( new MapBuilder().append( "_id", "2").append( "nonIdField", "hi" ) );
         bulkWriter.flush();
         
         assertNotNull( db.read("test.collection", "1") );

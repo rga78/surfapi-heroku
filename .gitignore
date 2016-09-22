@@ -1,8 +1,10 @@
 target
 bower_components
 .*.swp
+.*.un~
 .classpath
 .settings
 .project
 mongolab.env
+.env
 

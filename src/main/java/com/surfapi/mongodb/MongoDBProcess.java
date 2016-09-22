@@ -16,8 +16,15 @@ import com.surfapi.proc.StreamPiper;
 /**
  * Handles starting/stopping a mongodb process for testing purposes.
  *
+ * NOTE:  This code was originally written for windows (not mac).
  */
 public class MongoDBProcess extends ProcessHelper<MongoDBProcess> implements Observer {
+
+    /**
+     * Running locally on a mac.
+     * This code was originally written for windows.
+     */
+    private static boolean IsMac = System.getProperty("os.name").startsWith("Mac");
 
     /**
      * Singleton reference to the actual active mongod process.
@@ -108,6 +115,8 @@ public class MongoDBProcess extends ProcessHelper<MongoDBProcess> implements Obs
     }
     
     /**
+     * NOTE: only works on windows.
+     *
      * @return the mongodb process lock file.
      */
     private static File getLockFile() {
@@ -125,10 +134,28 @@ public class MongoDBProcess extends ProcessHelper<MongoDBProcess> implements Obs
     }
     
     /**
+     * Defers to isStartedWin() or isStartedMac()
+     *
+     * @return true if the mongodb process is already running.  
+     */
+    protected static boolean isStarted() {
+        return (MongoDBProcess.IsMac) ? isStartedMac() : isStartedWin();
+    }
+
+    /**
+     * Assumes mongodb is running.
+     * TODO: detect mongodb is running.
+     * @return true 
+     */
+    protected static boolean isStartedMac() {
+        return true;
+    }
+
+    /**
      * @return true if the mongodb process is already running.  This is determined
      *         by looking for and trying to delete the mongod lock file.
      */
-    protected static boolean isStarted() {
+    protected static boolean isStartedWin() {
         File lockFile = getLockFile();
         return (lockFile.exists()) ?  !lockFile.delete() : false;
     }
@@ -163,7 +190,7 @@ public class MongoDBProcess extends ProcessHelper<MongoDBProcess> implements Obs
     }
     
     /**
-     * 
+     * NOTE: only works on windows.
      */
     protected static MongoDBProcess buildProcess() throws IOException {
         Process process = new ProcessBuilder( Arrays.asList( "C:\\mongodb\\bin\\mongod.exe" ) ).start() ;

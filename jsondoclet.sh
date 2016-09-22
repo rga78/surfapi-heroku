@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+# Convert javadoc to JSON
+#
 
 
 if [ -z $3 ]; then
@@ -11,9 +13,12 @@ if [ -z $3 ]; then
     exit 1
 fi
 
+# cp_sep=";"   # windows
+cp_sep=":"     # mac
+
 # build the doclet path
 dp=target/classes
-for x in `find target/dependency`; do dp="$dp;$x"; done
+for x in `find target/dependency`; do dp="${dp}${cp_sep}${x}"; done
 
 javadoc \
         -doclet com.surfapi.javadoc.JsonDoclet \

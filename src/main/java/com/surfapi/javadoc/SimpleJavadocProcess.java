@@ -271,7 +271,7 @@ public class SimpleJavadocProcess {
                                                       getDocletPath(),
                                                       "-doclet",
                                                       getDocletClass().getCanonicalName(),
-                                                      getQuietOption(),
+                                                      getQuietOption(),   
                                                       "-J-Xms1024m",
                                                       "-J-Xmx4096m",
                                                       "-J-DMONGOLAB_URI=" + getMongoUri(),
@@ -282,9 +282,15 @@ public class SimpleJavadocProcess {
 
         command.addAll( buildSubpackagesCommandArgs() );
         command.addAll( getPackages() );
+
+        command.removeAll(Arrays.asList("", null));
+
+        // -rx- Log.info(this, "buildCommand: " + command );
         
         return command;
     }
+
+
     
 
     /**

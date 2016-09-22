@@ -13,23 +13,38 @@ the target directory (some of the tests need them).
     $ mvn package -DskipTests=true
     $ mvn test
 
+Testing against local mongodb:
+    
+    $ . ./.env
+    $ export MONGOLAB_URI=$MONGOLAB_TEST
+
+    $ mvn test -Dtest=MongoDBProcessTest -DrunMongo=true
+    $ mvn test -DrunMongo=true
+
 
 ### Running in local sandbox
 
-1. Start mongo
-```
+1\. Start local mongo 
+
     $ ./startMongo.sh
 
-    // connect to mongo
+    # verify mongo connection
     $ mongo localhost/test
-```
 
-2. Start appserver  
+2\. Load env
+
+    $ . ./.env
+    $ export MONGOLAB_URI=$MONGOLAB_TEST
+
+3\. Start appserver  
     
-        $ . ./mongolab.env
-        $ export MONGOLAB_URI=$MONGOLAB_TEST
-        $ ./startServer.sh MongoMain
+    $ ./startServer.sh MongoMain
 
+
+### Environment
+
+    MONGOLAB_URI: mongo uri
+    PORT: listener port
 
 ### Git
 
